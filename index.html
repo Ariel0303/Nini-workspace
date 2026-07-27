@@ -1319,6 +1319,8 @@ document.addEventListener('DOMContentLoaded', async function(){
   }
   // Force initial sync after load
   await loadGH();
+  // Fix corrupted local data
+  try{var test=JSON.parse(localStorage.getItem('todos')||'null');if(test&&typeof test==='object'){var kk=Object.keys(test)[0];if(kk&&kk.indexOf('%')>-1){console.log('fixing encoded data...');for(var i=0;i<localStorage.length;i++){var kk2=localStorage.key(i);if(kk2!=='gitee_token')try{var v=localStorage.getItem(kk2);localStorage.setItem(kk2,JSON.stringify(JSON.parse(decodeURIComponent(v))))}catch(x){}}}};}catch(e){}
   _d=!0;syncGH();
   // Auto-collapse all cards
   document.querySelectorAll('.card').forEach(card=>{
