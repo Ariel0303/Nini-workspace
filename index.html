@@ -205,6 +205,7 @@ textarea{resize:vertical;min-height:70px}
 .yarn-meta{font-size:12px;color:var(--text-light);margin-top:10px;display:flex;justify-content:space-between;align-items:center}
 .yarn-del{cursor:pointer;color:var(--rose);font-size:20px;opacity:.5;transition:.2s}
 .yarn-del:hover{opacity:1}
+.yarn-index{position:absolute;top:12px;left:12px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);color:var(--rose);font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);border:2px solid var(--pink);z-index:2}
 
 /* Scrollbar */
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--pink);border-radius:3px}
@@ -242,6 +243,7 @@ textarea{resize:vertical;min-height:70px}
   .yarn-img{height:140px}
   .yarn-body{padding:10px}
   .yarn-name{font-size:14px}
+  .yarn-index{width:24px;height:24px;font-size:11px;top:8px;left:8px}
 }
 </style>
 </head>
@@ -1453,8 +1455,9 @@ function renderYarns(){
   const yarns=getYarns(),list=$('yarnList'),empty=$('yarnEmpty');
   if(!yarns.length){list.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  list.innerHTML=yarns.map(y=>`
+  list.innerHTML=yarns.map((y,i)=>`
     <div class="yarn-card">
+      <div class="yarn-index">${i+1}</div>
       ${y.image?`<img src="${y.image}" class="yarn-img" alt="${escHtml(y.name)}">`:''}
       <div class="yarn-body">
         <div class="yarn-name">${escHtml(y.name)}</div>
