@@ -795,7 +795,11 @@ function renderThinkCourses(){
 }
 
 // ========== MODULE 3: Expenses ==========
-function getExpenses(){return (getData('expenses')||{})[TODAY]||[]}
+function getExpenses(){
+  const all=getData('expenses')||{};
+  if(typeof all!=='object'||Array.isArray(all)){setData('expenses',{});return [];}
+  return all[TODAY]||[];
+}
 function saveExpenses(e){let all=getData('expenses');all[TODAY]=e;setData('expenses',all)}
 
 function renderCatTags(){
@@ -909,7 +913,11 @@ function renderMoodChart(){
 }
 
 // ========== MODULE 5: Books ==========
-function getBooks(){return getData('books')||[]}
+function getBooks(){
+  const d=getData('books');
+  if(!d||!Array.isArray(d)){if(d)setData('books',[]);return [];}
+  return d;
+}
 function saveBooks(b){setData('books',b)}
 
 function addBook(){
@@ -1105,7 +1113,11 @@ function switchPage(page){
 }
 
 // ========== MODULE 1: Todos ==========
-function getTodos(){return getData('todos')||[]}
+function getTodos(){
+  const d=getData('todos');
+  if(!d||!Array.isArray(d)){if(d)setData('todos',[]);return [];}
+  return d;
+}
 function saveTodos(t){setData('todos',t)}
 
 function addTodo(){
