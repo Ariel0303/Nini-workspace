@@ -513,7 +513,15 @@ async function syncGH(){
   if(!_d)return;_d=!1;var tk=t();if(!tk)return;
   try{var a={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k!=='gitee_token')try{a[k]=JSON.parse(localStorage.getItem(k))}catch(x){a[k]=localStorage.getItem(k)}}
   var c=btoa(unescape(encodeURIComponent(JSON.stringify(a)))),body={content:c,message:'sync'};if(_sha)body.sha=_sha;
-  var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok){var d=await r.json();_sha=d.content.sha;}}catch(e){_d=!0}
+  var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(r.ok){var d=await r.json();_sha=d.content.sha;showSyncStatus('☁️ 已同步',3)}
+  else showSyncStatus('⚠️ 同步失败',3);
+  }catch(e){_d=!0;showSyncStatus('⚠️ 同步失败',3)}
+}
+
+function showSyncStatus(msg,sec){
+  var s=$('syncStatus')||(function(){var d=document.createElement('div');d.id='syncStatus';d.style.cssText='position:fixed;bottom:70px;right:16px;background:rgba(0,0,0,.75);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;z-index:999;transition:opacity .3s;pointer-events:none';document.body.appendChild(d);return d})();
+  s.textContent=msg;s.style.opacity='1';clearTimeout(s._t);s._t=setTimeout(function(){s.style.opacity='0'},sec*1000);
 }
 
 function initKey(key,def){if(getData(key)===null)setData(key,def)}
@@ -1309,9 +1317,9 @@ document.addEventListener('DOMContentLoaded', async function(){
     document.body.insertAdjacentHTML('afterbegin','<div id="tokenBox" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:30px"><div style="max-width:360px;text-align:center"><h2 style="color:#E91E63;margin-bottom:8px">☁️ 云端同步</h2><p style="color:#666;font-size:14px;margin-bottom:16px">请输入 Gitee Token 以启用数据同步<br><small>gitee.com → 设置 → 私人令牌</small></p><input id="tokenInput" placeholder="粘贴 Token" style="width:100%;padding:12px;font-size:15px;text-align:center;border:2px solid #E91E63;border-radius:12px;margin-bottom:12px"><button onclick="var v=document.getElementById(\'tokenInput\').value.trim();if(v){localStorage.setItem(\'gitee_token\',v);document.getElementById(\'tokenBox\').remove();location.reload()}" style="width:100%;padding:14px;background:#E91E63;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700">确认</button><button onclick="document.getElementById(\'tokenBox\').remove()" style="margin-top:10px;background:none;border:none;color:#999;font-size:13px">跳过（本地使用）</button></div></div>');
     return;
   }
+  // Force initial sync after load
   await loadGH();
-  // Force push if we have local data but no cloud sha (first sync)
-  if(!_sha){_d=!0;await syncGH();}
+  _d=!0;syncGH();
   // Auto-collapse all cards
   document.querySelectorAll('.card').forEach(card=>{
     if(card.querySelector('.card-body'))return; // already wrapped
