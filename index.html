@@ -1084,11 +1084,211 @@ function importData(event){
   reader.readAsText(file);
 }
 
+// ========== Page Navigation ==========
+function switchPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  $('page-'+page).classList.add('active');
+  document.querySelector('.nav-item[data-page="'+page+'"]').classList.add('active');
+}
+
+// ========== MODULE 1: Todos ==========
+function getTodos(){return getData('todos')||[]}
+function saveTodos(t){setData('todos',t)}
+
+function addTodo(){
+  const text=$('todoText').value.trim();if(!text)return;
+  const pri=$('todoPriority').value,cat=$('todoCategory').value;
+  const todos=getTodos();todos.push({id:Date.now(),text,pri,cat,done:false,date:TODAY});
+  saveTodos(todos);$('todoText').value='';renderTodos();renderTodoSummary();
+}
+
+function toggleTodo(id){
+  const todos=getTodos();const t=todos.find(x=>x.id===id);if(!t)return;
+  t.done=!t.done;saveTodos(todos);renderTodos();renderTodoSummary();
+}
+
+function delTodo(id){if(!confirm('删除这个任务？'))return;saveTodos(getTodos().filter(x=>x.id!==id));renderTodos();renderTodoSummary()}
+
+function renderTodos(){
+  const todos=getTodos(),list=$('todoList'),delayList=$('delayList'),delayCard=$('delayCard');
+  const todayTodos=todos.filter(t=>t.date===TODAY);
+  const doneToday=todayTodos.filter(t=>t.done).length;
+  const totalToday=todayTodos.length;
+  $('planTotal').textContent=totalToday;$('planDone').textContent=doneToday;
+  $('planRate').textContent=totalToday?Math.round(doneToday/totalToday*100)+'%':'0%';
+  // Delay: tasks from before today that are not done
+  const now=new Date(),delayed=todos.filter(t=>!t.done&&t.date&&t.date<TODAY);
+  $('planDelay').textContent=delayed.length;
+  if(delayed.length){delayCard.style.display='block';delayList.innerHTML=delayed.map(t=>`
+    <div class="todo-item" style="border-left-color:var(--high)">
+      <div class="todo-check" onclick="toggleTodo(${t.id})"></div>
+      <span class="todo-text">${escHtml(t.text)}</span>
+      <span class="priority-tag phigh">${escHtml(t.cat)}</span>
+      <span class="todo-del" onclick="delTodo(${t.id})">×</span>
+    </div>`).join('');}
+  else{delayCard.style.display='none';}
+  if(!todayTodos.length){list.innerHTML='<p style="text-align:center;color:var(--text-light);padding:16px">今天还没有任务哦，妮妮~ ✨</p>';return;}
+  list.innerHTML=todayTodos.map(t=>{
+    const cls={high:'phigh',mid:'pmid',low:'plow'}[t.pri]||'pmid';
+    const ccls={生活办事:'cat-life',学习:'cat-study',工作:'cat-work',娱乐:'cat-fun',手工:'cat-hand'}[t.cat]||'';
+    const plabel={high:'🔴高',mid:'🟡中',low:'🟢低'}[t.pri]||'';
+    return `<div class="todo-item${t.done?' done':''}" style="border-left-color:${t.done?'var(--low)':{high:'var(--high)',mid:'var(--mid)',low:'var(--low)'}[t.pri]}">
+      <div class="todo-check${t.done?' checked':''}" onclick="toggleTodo(${t.id})">${t.done?'✓':''}</div>
+      <span class="todo-text">${escHtml(t.text)}</span>
+      <span class="priority-tag ${cls}">${plabel}</span>
+      <span class="cat-todo ${ccls}">${escHtml(t.cat)}</span>
+      <span class="todo-del" onclick="delTodo(${t.id})">×</span>
+    </div>`;
+  }).join('');
+  $('planProgressBar').style.width=(totalToday?doneToday/totalToday*100:0)+'%';
+}
+
+function renderTodoSummary(){
+  const todos=getTodos();
+  const now=new Date(),y=now.getFullYear(),m=now.getMonth();
+  const monthTodos=todos.filter(t=>{
+    if(!t.date)return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m;
+  });
+  const byCat={};monthTodos.forEach(t=>{byCat[t.cat]=(byCat[t.cat]||0)+1});
+  const labels=Object.keys(byCat),data=Object.values(byCat);
+  const colors={生活办事:'#F48FB1',学习:'#7986CB',工作:'#81C784',娱乐:'#FFD54F',手工:'#CE93D8'};
+  if(todoSummaryChart)todoSummaryChart.destroy();
+  const ctx=$('todoSummaryChart').getContext('2d');
+  if(!labels.length){ctx.clearRect(0,0,$('todoSummaryChart').width,$('todoSummaryChart').height);$('todoSummaryText').textContent='本月还没有任务记录哦~';return;}
+  todoSummaryChart=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:labels.map(l=>colors[l]||'#F8BBD9'),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:12,usePointStyle:true,font:{size:12}}}},cutout:'55%'}
+  });
+  $('todoSummaryText').textContent=`本月共 ${monthTodos.length} 个任务`;
+}
+
+// ========== MODULE 2: Checkins ==========
+function getCheckins(){return getData('checkins')||{}}
+function saveCheckins(c){setData('checkins',c)}
+
+function setCheckinStatus(type,status){
+  const c=getCheckins();if(!c[type])c[type]={};
+  c[type][TODAY]={status:status,time:$('time-'+type).value.trim()||new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
+  saveCheckins(c);renderCheckins();
+}
+
+function toggleWaterCup(idx){
+  const c=getCheckins();if(!c.water)c.water=[];
+  if(c.water.includes(idx)){c.water=c.water.filter(x=>x!==idx);}
+  else if(c.water.length<8)c.water.push(idx);
+  saveCheckins(c);renderCheckins();
+}
+
+function renderCheckins(){
+  const c=getCheckins();
+  // Sleep
+  const sl=c.sleep&&c.sleep[TODAY];
+  const btnSG=$('btn-sleep-good'),btnSB=$('btn-sleep-bad');
+  if(sl){
+    btnSG.className='checkin-btn '+(sl.status==='good'?'checked':'unchecked');
+    btnSB.className='checkin-btn '+(sl.status==='bad'?'checked':'unchecked');
+    btnSG.textContent=sl.status==='good'?'成功 ✓':'成功';
+    btnSB.textContent=sl.status==='bad'?'失败 ✓':'失败';
+    $('time-sleep').value=sl.time||'';
+    $('ci-sleep').className='checkin-card done';
+  }else{
+    btnSG.className='checkin-btn unchecked';btnSG.textContent='成功';
+    btnSB.className='checkin-btn unchecked';btnSB.textContent='失败';
+    $('ci-sleep').className='checkin-card';
+  }
+  // Wake
+  const wk=c.wake&&c.wake[TODAY];
+  const btnWG=$('btn-wake-good'),btnWB=$('btn-wake-bad');
+  if(wk){
+    btnWG.className='checkin-btn '+(wk.status==='good'?'checked':'unchecked');
+    btnWB.className='checkin-btn '+(wk.status==='bad'?'checked':'unchecked');
+    btnWG.textContent=wk.status==='good'?'成功 ✓':'成功';
+    btnWB.textContent=wk.status==='bad'?'失败 ✓':'失败';
+    $('time-wake').value=wk.time||'';
+    $('ci-wake').className='checkin-card done';
+  }else{
+    btnWG.className='checkin-btn unchecked';btnWG.textContent='成功';
+    btnWB.className='checkin-btn unchecked';btnWB.textContent='失败';
+    $('ci-wake').className='checkin-card';
+  }
+  // Water
+  const wArr=c.water||[];
+  let wHtml='';
+  for(let i=0;i<8;i++){
+    const filled=wArr.includes(i);
+    wHtml+=`<span style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:.2s;border:3px solid ${filled?'var(--low)':'var(--pink)'};background:${filled?'#C8E6C9':'#fff'}" onclick="toggleWaterCup(${i})">${filled?'💧':'🥤'}</span>`;
+  }
+  $('waterCups').innerHTML=wHtml;
+  $('waterCount').textContent=`已喝 ${wArr.length} / 8 杯`;
+  if(wArr.length>=8)$('ci-water').className='checkin-card done';else $('ci-water').className='checkin-card';
+  // Calendars
+  if($('cal-sleep').classList.contains('show'))renderCalendar('sleep');
+  if($('cal-wake').classList.contains('show'))renderCalendar('wake');
+  if($('cal-water').classList.contains('show'))renderCalendar('water');
+}
+
+// ========== Calendar ==========
+const CAL_TYPES={
+  sleep:{key:'sleep',getColor:d=>d.status==='good'?'checked':d.status==='bad'?'missed':'',getLabel:d=>d.time||''},
+  wake:{key:'wake',getColor:d=>d.status==='good'?'checked':d.status==='bad'?'missed':'',getLabel:d=>d.time||''},
+  water:{key:'water',getColor:(d,arr)=>arr&&arr.length>0?'checked':'',getLabel:''},
+  engread:{key:'engcheckins',isEng:true,subKey:'engread'},
+  engscene:{key:'scene_checkins',isEng:true,subKey:'engscene'},
+  lifescene:{key:'life_scene_checkins',isEng:true,subKey:'lifescene'}
+};
+
+function toggleCalendar(type){
+  const cal=$('cal-'+type);
+  cal.classList.toggle('show');
+  if(cal.classList.contains('show'))renderCalendar(type);
+}
+
+function renderCalendar(type){
+  const cal=$('cal-'+type);
+  const now=new Date(),y=now.getFullYear(),m=now.getMonth();
+  const firstDay=new Date(y,m,1).getDay(),daysInMonth=new Date(y,m+1,0).getDate();
+  const info=CAL_TYPES[type];
+  let html=`<div class="cal-month-label">${y}年${m+1}月</div><div class="cal-grid">`;
+  html+='日一二三四五六'.split('').map(d=>`<div class="cal-day-head">${d}</div>`).join('');
+  for(let i=0;i<firstDay;i++)html+='<div class="cal-day empty"></div>';
+  const data=getData(info.key)||{};
+  for(let d=1;d<=daysInMonth;d++){
+    const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=key===TODAY;
+    let cls='',label='';
+    if(info.isEng){
+      const dayData=data[key]||{};
+      const nw=!!dayData.new,rv=!!dayData.review;
+      if(nw&&!rv)cls='new-only';else if(!nw&&rv)cls='review-only';else if(nw&&rv)cls='both';
+    }else if(type==='water'){
+      const arr=data[key]||[];if(arr.length>0)cls='checked';label=arr.length+'杯';
+    }else{
+      const ddata=data[key];if(ddata){cls=info.getColor(ddata,data[key]);label=info.getLabel(ddata);}
+    }
+    if(isToday)cls+=' today';
+    const timed=cls&&(cls!=='empty');
+    html+=`<div class="cal-day${timed?' cal-timed':' cal-plain'}${cls?' '+cls:''}" title="${key}${label?' · '+label:''}">${d}${label?'<br>'+label:''}</div>`;
+  }
+  html+='</div>';
+  const totalDays=Object.keys(data).filter(k=>k.startsWith(`${y}-${String(m+1).padStart(2,'0')}-`)).length;
+  html+=`<div class="cal-summary">本月已记录 ${totalDays} 天</div>`;
+  cal.innerHTML=html;
+}
+
 // ========== Helpers ==========
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
 // ========== Init ==========
 document.addEventListener('DOMContentLoaded', function(){
+  // Set today's date labels
+  const d=new Date(),weekdays=['周日','周一','周二','周三','周四','周五','周六'];
+  const dstr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${weekdays[d.getDay()]}`;
+  if($('todayDatePlan'))$('todayDatePlan').textContent=dstr;
+  if($('todayDateCheckin'))$('todayDateCheckin').textContent=dstr;
+  if($('todayDateExpense'))$('todayDateExpense').textContent=dstr;
+  if($('todayDateMood'))$('todayDateMood').textContent=dstr;
   // Auto-collapse all cards
   document.querySelectorAll('.card').forEach(card=>{
     if(card.querySelector('.card-body'))return; // already wrapped
