@@ -1255,9 +1255,9 @@ function renderCheckins(){
 
 // ========== Calendar ==========
 const CAL_TYPES={
-  sleep:{key:'sleep',getColor:d=>d.status==='good'?'checked':d.status==='bad'?'missed':'',getLabel:d=>d.time||''},
-  wake:{key:'wake',getColor:d=>d.status==='good'?'checked':d.status==='bad'?'missed':'',getLabel:d=>d.time||''},
-  water:{key:'water',getColor:(d,arr)=>arr&&arr.length>0?'checked':'',getLabel:''},
+  sleep:{rootKey:'checkins',subKey:'sleep',getColor:d=>d.status==='good'?'checked':d.status==='bad'?'missed':'',getLabel:d=>d.time||''},
+  wake:{rootKey:'checkins',subKey:'wake',getColor:d=>d.status==='good'?'checked':d.status==='bad'?'missed':'',getLabel:d=>d.time||''},
+  water:{rootKey:'checkins',subKey:'water',getColor:(arr)=>arr&&arr.length>0?'checked':'',getLabel:''},
   engread:{key:'engcheckins',isEng:true,subKey:'engread'},
   engscene:{key:'scene_checkins',isEng:true,subKey:'engscene'},
   lifescene:{key:'life_scene_checkins',isEng:true,subKey:'lifescene'}
@@ -1277,7 +1277,14 @@ function renderCalendar(type){
   let html=`<div class="cal-month-label">${y}年${m+1}月</div><div class="cal-grid">`;
   html+='日一二三四五六'.split('').map(d=>`<div class="cal-day-head">${d}</div>`).join('');
   for(let i=0;i<firstDay;i++)html+='<div class="cal-day empty"></div>';
-  const data=getData(info.key)||{};
+  // Load data (nested for checkins, direct for English modules)
+  let data={};
+  if(info.rootKey){
+    const root=getData(info.rootKey)||{};
+    data=root[info.subKey]||{};
+  }else{
+    data=getData(info.key)||{};
+  }
   for(let d=1;d<=daysInMonth;d++){
     const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday=key===TODAY;
@@ -1289,14 +1296,21 @@ function renderCalendar(type){
     }else if(type==='water'){
       const arr=data[key]||[];if(arr.length>0)cls='checked';label=arr.length+'杯';
     }else{
-      const ddata=data[key];if(ddata){cls=info.getColor(ddata,data[key]);label=info.getLabel(ddata);}
+      const ddata=data[key];if(ddata){cls=info.getColor(ddata);label=info.getLabel(ddata);}
     }
     if(isToday)cls+=' today';
     const timed=cls&&(cls!=='empty');
     html+=`<div class="cal-day${timed?' cal-timed':' cal-plain'}${cls?' '+cls:''}" title="${key}${label?' · '+label:''}">${d}${label?'<br>'+label:''}</div>`;
   }
   html+='</div>';
-  const totalDays=Object.keys(data).filter(k=>k.startsWith(`${y}-${String(m+1).padStart(2,'0')}-`)).length;
+  let totalDays=0;
+  if(type==='water'){
+    totalDays=Object.values(data).filter(v=>Array.isArray(v)&&v.length>0).length;
+  }else if(info.isEng){
+    totalDays=Object.values(data).filter(v=>v.new||v.review).length;
+  }else{
+    totalDays=Object.values(data).filter(v=>v&&v.status).length;
+  }
   html+=`<div class="cal-summary">本月已记录 ${totalDays} 天</div>`;
   cal.innerHTML=html;
 }
