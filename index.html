@@ -206,6 +206,17 @@ textarea{resize:vertical;min-height:70px}
 .yarn-del{cursor:pointer;color:var(--rose);font-size:20px;opacity:.5;transition:.2s}
 .yarn-del:hover{opacity:1}
 .yarn-index{position:absolute;top:12px;left:12px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);color:var(--rose);font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);border:2px solid var(--pink);z-index:2}
+.yarn-edit{display:flex;gap:8px}
+.yarn-edit span{cursor:pointer;font-size:13px;color:var(--text-light);transition:.2s}
+.yarn-edit span:hover{color:var(--rose)}
+.yarn-edit-form{padding:16px;display:flex;flex-direction:column;gap:10px}
+.yarn-edit-form img{max-width:100%;height:160px;object-fit:cover;border-radius:8px;background:var(--cream)}
+.yarn-edit-form input,.yarn-edit-form textarea{width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:13px;outline:none}
+.yarn-edit-form textarea{min-height:70px;resize:vertical}
+.yarn-edit-actions{display:flex;gap:8px}
+.yarn-edit-actions button{flex:1;padding:8px 12px;border-radius:10px;border:none;font-size:13px;cursor:pointer}
+.yarn-edit-actions .btn-save{background:var(--rose);color:#fff}
+.yarn-edit-actions .btn-cancel{background:var(--cream);color:var(--text)}
 
 /* Scrollbar */
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--pink);border-radius:3px}
@@ -244,6 +255,8 @@ textarea{resize:vertical;min-height:70px}
   .yarn-body{padding:10px}
   .yarn-name{font-size:14px}
   .yarn-index{width:24px;height:24px;font-size:11px;top:8px;left:8px}
+  .yarn-edit-form{padding:10px}
+  .yarn-edit-form img{height:100px}
 }
 </style>
 </head>
@@ -1398,6 +1411,7 @@ function renderCalendar(type){
 }
 
 // ========== MODULE: Yarn Records ==========
+let editingYarnId=null;
 function getYarns(){
   const d=getData('yarns');
   if(!d||!Array.isArray(d)){if(d)setData('yarns',[]);return [];}
@@ -1464,7 +1478,25 @@ function renderYarns(){
   const yarns=getYarns(),list=$('yarnList'),empty=$('yarnEmpty');
   if(!yarns.length){list.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  list.innerHTML=yarns.map((y,i)=>`
+  list.innerHTML=yarns.map((y,i)=>{
+    if(editingYarnId===y.id){
+      return `
+      <div class="yarn-card" style="border-color:var(--rose)">
+        <div class="yarn-index">${i+1}</div>
+        <div class="yarn-edit-form">
+          ${y.image?`<img src="${y.image}" alt="当前图片">`:''}
+          <input type="file" id="yarnEditImg-${y.id}" accept="image/*">
+          <p style="font-size:11px;color:var(--text-light);margin:0">不选新图则保留当前图片</p>
+          <input type="text" id="yarnEditName-${y.id}" value="${escHtml(y.name)}" placeholder="作品名字">
+          <textarea id="yarnEditDesc-${y.id}" placeholder="描述...">${escHtml(y.desc||'')}</textarea>
+          <div class="yarn-edit-actions">
+            <button class="btn-save" onclick="saveYarnEdit(${y.id})">💾 保存</button>
+            <button class="btn-cancel" onclick="cancelYarnEdit()">取消</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    return `
     <div class="yarn-card">
       <div class="yarn-index">${i+1}</div>
       ${y.image?`<img src="${y.image}" class="yarn-img" alt="${escHtml(y.name)}">`:''}
@@ -1473,11 +1505,43 @@ function renderYarns(){
         ${y.desc?`<div class="yarn-desc">${escHtml(y.desc)}</div>`:''}
         <div class="yarn-meta">
           <span>${y.date||''}</span>
-          <span class="yarn-del" onclick="deleteYarn(${y.id})" title="删除">×</span>
+          <div class="yarn-edit">
+            <span onclick="startEditYarn(${y.id})" title="编辑">✏️</span>
+            <span class="yarn-del" onclick="deleteYarn(${y.id})" title="删除">×</span>
+          </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+}
+
+function startEditYarn(id){editingYarnId=id;renderYarns();}
+function cancelYarnEdit(){editingYarnId=null;renderYarns();}
+
+async function saveYarnEdit(id){
+  try{
+    const name=$(`yarnEditName-${id}`).value.trim();
+    const desc=$(`yarnEditDesc-${id}`).value.trim();
+    const fileInput=$(`yarnEditImg-${id}`),file=fileInput.files[0];
+    if(!name){alert('请填写作品名字哦～');return;}
+    const yarns=getYarns();
+    const idx=yarns.findIndex(y=>y.id===id);
+    if(idx===-1)return;
+    let img=yarns[idx].image;
+    if(file){
+      if(file.size>10*1024*1024){alert('图片太大啦，请选择 10MB 以内的照片');return;}
+      img=await compressImage(file,600,600,0.7);
+    }
+    yarns[idx]={...yarns[idx],name,desc,image:img};
+    saveYarns(yarns);
+    editingYarnId=null;
+    renderYarns();
+    showMsg('作品已更新！🧶');
+  }catch(e){
+    console.error('saveYarnEdit error',e);
+    if(e.name==='QuotaExceededError'||e.code===22){showError('保存失败：图片太大，请换张小图');}
+    else{showError('保存作品失败: '+e.message);}
+  }
 }
 
 // ========== Helpers ==========
