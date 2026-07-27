@@ -507,7 +507,7 @@ let expenseChart = null, moodChart = null, todoSummaryChart = null;
 
 function $(id){return document.getElementById(id)}
 function getData(key){try{return JSON.parse(localStorage.getItem(key)||'null')}catch(e){return null}}
-function setData(key,val){localStorage.setItem(key,JSON.stringify(val));scheduleSync()}
+function setData(key,val){localStorage.setItem(key,JSON.stringify(val))}
 
 // ===== Cloud Sync (手动) =====
 var _sha=null;
