@@ -1294,7 +1294,7 @@ function renderCalendar(type){
       const nw=!!dayData.new,rv=!!dayData.review;
       if(nw&&!rv)cls='new-only';else if(!nw&&rv)cls='review-only';else if(nw&&rv)cls='both';
     }else if(type==='water'){
-      const arr=data[key]||[];if(arr.length>0)cls='checked';label=arr.length+'杯';
+      const arr=data[key]||[];if(arr.length>=8)cls='checked';
     }else{
       const ddata=data[key];if(ddata){cls=info.getColor(ddata);label=info.getLabel(ddata);}
     }
@@ -1305,7 +1305,7 @@ function renderCalendar(type){
   html+='</div>';
   let totalDays=0;
   if(type==='water'){
-    totalDays=Object.values(data).filter(v=>Array.isArray(v)&&v.length>0).length;
+    totalDays=Object.values(data).filter(v=>Array.isArray(v)&&v.length>=8).length;
   }else if(info.isEng){
     totalDays=Object.values(data).filter(v=>v.new||v.review).length;
   }else{
