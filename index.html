@@ -1199,9 +1199,14 @@ function setCheckinStatus(type,status){
 }
 
 function toggleWaterCup(idx){
-  const c=getCheckins();if(!c.water)c.water=[];
-  if(c.water.includes(idx)){c.water=c.water.filter(x=>x!==idx);}
-  else if(c.water.length<8)c.water.push(idx);
+  const c=getCheckins();
+  // Migrate old flat array format to per-date format
+  if(Array.isArray(c.water)){c.water={[TODAY]:c.water};}
+  if(!c.water||typeof c.water!=='object')c.water={};
+  if(!c.water[TODAY])c.water[TODAY]=[];
+  const arr=c.water[TODAY];
+  if(arr.includes(idx)){c.water[TODAY]=arr.filter(x=>x!==idx);}
+  else if(arr.length<8)c.water[TODAY].push(idx);
   saveCheckins(c);renderCheckins();
 }
 
@@ -1238,7 +1243,8 @@ function renderCheckins(){
     $('ci-wake').className='checkin-card';
   }
   // Water
-  const wArr=c.water||[];
+  if(Array.isArray(c.water)){c.water={[TODAY]:c.water};saveCheckins(c);}
+  const wArr=(c.water&&c.water[TODAY])||[];
   let wHtml='';
   for(let i=0;i<8;i++){
     const filled=wArr.includes(i);
