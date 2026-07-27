@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌸 樱田妮妮工作台</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  /* 淡粉色系 - 妮妮专属 */
+  --pink:#F8BBD9;--pink-deep:#F48FB1;--pink-soft:#FCE4EC;
+  --rose:#E91E63;--rose-light:#F06292;
+  --sakura:#FFB7C5;--cream:#FFF0F5;--lavender:#F3E5F5;
+  --peach:#FFCCBC;--gold:#FFD54F;
+  --text:#4A3728;--text-light:#8D7B74;--dark:#5D4037;
+  --bg:#FFF9FB;--card:#FFFFFF;--border:#FCE4EC;
+  --high:#EF5350;--mid:#FFA726;--low:#81C784;
+  --sidebar-w:220px;--radius:16px;
+  --shadow:0 3px 18px rgba(244,143,177,0.12);
+}
+body{font-family:-apple-system,BlinkMacSystemSystem,"PingFang SC","Hiragino Sans GB",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+
+/* Sidebar - 淡粉樱花风 */
+.sidebar{width:var(--sidebar-w);background:linear-gradient(180deg,var(--pink-deep),var(--rose));color:#fff;padding:24px 16px;position:fixed;height:100vh;left:0;top:0;z-index:100;display:flex;flex-direction:column;overflow-y:auto;border-right:3px solid var(--sakura)}
+.sidebar-logo{text-align:center;margin-bottom:28px}
+.sidebar-logo h1{font-size:20px;font-weight:800;letter-spacing:3px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.15)}
+.sidebar-logo p{font-size:12px;margin-top:6px;opacity:.9;color:var(--sakura)}
+
+.nav-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;cursor:pointer;transition:.25s;font-size:14.5px;font-weight:600;margin-bottom:4px;color:rgba(255,255,255,.9);border:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.2)}
+.nav-item.active{background:var(--sakura);color:var(--rose);font-weight:700;border-color:transparent;box-shadow:0 3px 10px rgba(0,0,0,.1)}
+.nav-icon{font-size:20px;width:26px;text-align:center}
+
+/* Main */
+.main{margin-left:var(--sidebar-w);flex:1;padding:28px 32px;max-width:calc(100vw - var(--sidebar-w))}
+.page{display:none}.page.active{display:block}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.page-header h2{font-size:26px;font-weight:800;color:var(--rose);position:relative;display:inline-block}
+.page-header h2::after{content:'';position:absolute;bottom:-4px;left:0;width:60%;height:3px;background:linear-gradient(90deg,var(--sakura),var(--pink));border-radius:2px}
+.page-header p{color:var(--text-light);font-size:14px}
+
+/* Cards */
+.card{background:var(--card);border-radius:var(--radius);padding:22px 26px;margin-bottom:20px;border:2px solid var(--border);box-shadow:var(--shadow)}
+.card-title{font-size:17px;font-weight:700;color:var(--rose);margin-bottom:16px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.card-body{display:block}.card-body.hidden{display:none}
+
+/* Forms */
+input[type=text],input[type=number],select,textarea{width:100%;padding:11px 15px;border:2px solid var(--border);border-radius:12px;font-size:14px;outline:none;transition:.25s;background:#FFF;color:var(--text)}
+input:focus,select:focus,textarea:focus{border-color:var(--pink-deep);box-shadow:0 0 0 4px rgba(244,143,177,.1)}
+textarea{resize:vertical;min-height:70px}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:11px 22px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:.25s}
+.btn-primary{background:linear-gradient(135deg,var(--pink-deep),var(--rose));color:#fff}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 16px rgba(233,30,99,.3)}
+.btn-sm{padding:7px 16px;font-size:13px}
+.btn-danger{background:var(--rose);color:#fff}
+.btn-outline{background:transparent;border:2px solid var(--rose);color:var(--rose)}
+.btn-outline:hover{background:var(--rose);color:#fff}
+
+/* Todo */
+.todo-form{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.todo-form input{flex:1;min-width:200px}
+.todo-form select{width:110px}
+.todo-list .todo-item{display:flex;align-items:center;gap:12px;padding:13px 17px;border-radius:14px;margin-bottom:8px;background:var(--cream);transition:.2s;border-left:4px solid transparent}
+.todo-list .todo-item.done{opacity:.55}
+.todo-list .todo-item.done span{text-decoration:line-through}
+.todo-check{width:24px;height:24px;border-radius:50%;border:3px solid var(--pink-deep);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0;background:#fff}
+.todo-check.checked{background:var(--rose);color:#fff;border-color:var(--rose)}
+.priority-tag{padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700}
+.phigh{background:#FFEBEE;color:var(--high)}.pmid{background:#FFF3E0;color:var(--mid)}.plow{background:#E8F5E9;color:var(--low)}
+.cat-todo{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.cat-life{background:#FCE4EC;color:#C2185B}.cat-study{background:#E8EAF6;color:#283593}.cat-work{background:#E0F2F1;color:#00695C}.cat-fun{background:#FFF8E1;color:#F57F17}.cat-hand{background:#F3E5F5;color:#6A1B9A}
+.todo-text{flex:1;font-size:14.5px}
+.todo-del{cursor:pointer;color:var(--rose);font-size:20px;opacity:.45;transition:.2s;font-weight:700}.todo-del:hover{opacity:1}
+.progress-bar{height:12px;background:var(--pink-soft);border-radius:6px;overflow:hidden;margin-top:14px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--pink-deep),var(--rose));border-radius:6px;transition:.4s}
+
+.stats-row{display:flex;gap:16px;margin-bottom:20px}
+.stat-card{flex:1;background:var(--card);border-radius:var(--radius);padding:18px;border:2px solid var(--border);text-align:center}
+.stat-num{font-size:34px;font-weight:900;color:var(--rose)}
+.stat-label{font-size:13px;color:var(--text-light);margin-top:4px}
+
+/* Checkin */
+.checkin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.checkin-card{background:var(--cream);border-radius:var(--radius);padding:22px;border:3px dashed var(--pink);position:relative;overflow:hidden}
+.checkin-card.done{border-style:solid;border-color:var(--low);background:#F1F8E9}
+.checkin-card::before{content:'';position:absolute;top:-25px;right:-25px;width:70px;height:70px;background:var(--sakura);border-radius:50%;opacity:.12}
+.checkin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.checkin-header h3{font-size:17px;font-weight:600;color:var(--dark)}
+.checkin-emoji{font-size:28px}
+.checkin-btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer;transition:.2s;margin-bottom:10px}
+.checkin-btn.unchecked{background:var(--lavender);color:var(--rose)}
+.checkin-btn.checked{background:var(--low);color:#1B5E20}
+.checkin-note{width:100%;padding:9px 13px;border:2px solid var(--border);border-radius:10px;font-size:13px;background:#fff;margin-top:8px}
+/* Calendar in checkin */
+.checkin-cal-toggle{font-size:12px;color:var(--rose);cursor:pointer;margin-top:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px;user-select:none}
+.checkin-cal-toggle:hover{opacity:.75}
+.checkin-calendar{display:none;margin-top:10px;background:#fff;border-radius:10px;padding:12px;border:1px solid var(--border)}
+.checkin-calendar.show{display:block}
+.cal-month-label{font-size:13px;font-weight:700;color:var(--dark);margin-bottom:8px;text-align:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day-head{font-size:10px;text-align:center;color:var(--text-light);padding:2px 0;font-weight:600}
+.cal-day{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text)}
+.cal-day.cal-timed{aspect-ratio:auto;min-height:30px;font-size:10px;padding:2px}
+.cal-day.cal-plain{aspect-ratio:1}
+.cal-day.empty{background:transparent;color:transparent}
+.cal-day.checked{background:#C8E6C9;color:#2E7D32}
+.cal-day.missed{background:#FFECEE;color:#C62828}
+.cal-day.new-only{background:#BBDEFB;color:#1565C0}
+.cal-day.review-only{background:#F3E5F5;color:#6A1B9A}
+.cal-day.both{background:#C8E6C9;color:#1B5E20;font-weight:800}
+.cal-day.today{box-shadow:inset 0 0 0 2px var(--rose);font-weight:800}
+.cal-summary{font-size:12px;color:var(--text-light);text-align:center;margin-top:6px}
+/* Think Course */
+.think-item{background:var(--cream);border-radius:12px;padding:14px;margin-bottom:8px;border:2px solid var(--border);transition:.2s}
+.think-item.done{border-color:var(--low);background:#E8F5E9}
+.think-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.think-name{font-size:14px;font-weight:700;color:var(--dark)}
+.think-pct{font-size:13px;font-weight:700;color:var(--rose)}
+.think-pct.full{color:#2E7D32}
+.think-lbar{height:6px;background:var(--pink-soft);border-radius:3px;overflow:hidden;margin-bottom:8px;cursor:pointer}
+.think-lfill{height:100%;background:linear-gradient(90deg,var(--pink-deep),var(--rose));border-radius:3px;transition:.3s}
+.think-input{display:none;align-items:center;gap:8px}
+.think-input.show{display:flex}
+.think-input input{width:70px;padding:6px 10px;font-size:13px;text-align:center}
+.think-input button{padding:6px 12px;font-size:12px;border-radius:8px}
+
+/* Expense */
+.expense-form{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.expense-form input{flex:1;min-width:120px}
+.expense-form select{width:130px}
+.cat-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.cat-tag{padding:7px 15px;border-radius:20px;font-size:13px;cursor:pointer;border:2px solid transparent;transition:.2s;background:var(--cream);font-weight:600}
+.cat-tag.active{border-color:var(--rose);background:var(--rose);color:#fff}
+.expense-list{max-height:320px;overflow-y:auto}
+.expense-item{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;border-radius:11px;margin-bottom:6px;background:var(--cream);font-size:14px}
+.expense-item .amt{font-weight:800;color:var(--rose);font-size:17px}
+.expense-total{font-size:22px;font-weight:900;color:var(--rose);text-align:right;margin-top:12px}
+.chart-container{position:relative;height:280px;margin-top:16px}
+
+/* Mood */
+.mood-today{display:flex;align-items:center;gap:20px;margin-bottom:24px}
+.mood-emoji-big{font-size:64px}
+.mood-input-area{flex:1}
+.mood-word-input{display:flex;gap:10px;margin-bottom:10px}
+.mood-options{display:flex;gap:10px;flex-wrap:wrap}
+.mood-opt{width:54px;height:54px;border-radius:50%;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;border:3px solid transparent;background:#fff}
+.mood-opt.selected{border-color:var(--rose);background:var(--pink-soft);transform:scale(1.15);box-shadow:0 4px 14 rgba(233,30,99,.18)}
+.mood-history{margin-top:20px}
+.mood-history-item{display:flex;align-items:center;gap:12px;padding:11px 15px;border-radius:11px;margin-bottom:6px;background:var(--cream);font-size:14px;border-left:3px solid var(--pink-deep)}
+.chart-container-mood{position:relative;height:240px;margin-top:16px}
+
+/* Books */
+.book-form{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.book-form input{flex:1;min-width:140px}
+.book-card{background:var(--cream);border-radius:var(--radius);padding:22px;margin-bottom:16px;border-left:5px solid var(--pink-deep)}
+.book-card h4{font-size:17px;font-weight:700;margin-bottom:4px;color:var(--dark)}
+.book-card .book-meta{font-size:13px;color:var(--text-light);margin-bottom:10px}
+.book-progress{margin:12px 0}
+.book-progress-bar{height:10px;background:var(--pink-soft);border-radius:5px;overflow:hidden}
+.book-progress-fill{height:100%;background:linear-gradient(90deg,var(--pink),var(--rose));border-radius:5px;transition:.3s}
+.book-page-input{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px}
+.book-page-input input{width:80px;padding:7px 11px}
+.note-area{margin-top:14px;border-top:2px dashed var(--border);padding-top:14px}
+.note-area h5{font-size:14px;font-weight:700;margin-bottom:8px;color:var(--rose)}
+.note-item{background:#fff;padding:11px 15px;border-radius:9px;margin-bottom:7px;font-size:13px;border-left:3px solid var(--sakura)}
+.note-add{display:flex;gap:8px;margin-top:8px}
+.note-add textarea{flex:1;min-height:50px;font-size:13px}
+
+/* English placeholder */
+.eng-placeholder{display:flex;align-items:center;justify-content:center;min-height:400px;flex-direction:column;gap:16px;color:var(--text-light)}
+.eng-placeholder .icon{font-size:64px}
+
+/* AI Float - 妮妮助手 */
+.ai-float{position:fixed;bottom:28px;right:28px;z-index:999}
+.ai-btn{width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,var(--pink-deep),var(--rose));color:#fff;border:none;font-size:27px;cursor:pointer;box-shadow:0 4px 22px rgba(233,30,99,.35);transition:.3s;display:flex;align-items:center;justify-content:center;border:3px solid var(--sakura)}
+.ai-btn:hover{transform:scale(1.08) rotate(-5deg)}
+.ai-panel{position:absolute;bottom:74px;right:0;width:360px;background:var(--card);border-radius:var(--radius);box-shadow:0 10px 44px rgba(0,0,0,.14);border:2px solid var(--border);display:none;flex-direction:column;overflow:hidden}
+.ai-panel.show{display:flex}
+.ai-panel-head{padding:14px 18px;background:linear-gradient(135deg,var(--pink-deep),var(--rose));color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;border-bottom:3px solid var(--sakura)}
+.ai-panel-body{padding:16px}
+.ai-panel-body textarea{width:100%;height:80px;border:2px solid var(--border);border-radius:12px;padding:12px;font-size:14px;resize:none;background:#fff}
+.ai-panel-body .ai-hint{font-size:12px;color:var(--text-light);margin-top:8px}
+.ai-result{margin-top:12px;padding:13px;border-radius:12px;background:var(--cream);font-size:13px;display:none;line-height:1.7}
+.ai-result.show{display:block}
+
+/* Data management */
+.data-actions{display:flex;gap:10px;margin-top:20px;padding:16px;background:var(--cream);border-radius:var(--radius);border:2px dashed var(--pink)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--pink);border-radius:3px}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{width:64px;padding:16px 8px}
+  .sidebar-logo h1,.nav-item span,.sidebar-logo p{display:none}
+  .nav-icon{font-size:22px}
+  .nav-item{justify-content:center;padding:12px}
+  .main{margin-left:64px;padding:16px}
+  .stats-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>👧 樱田妮妮</h1>
+    <p>Nini's Workspace ✨</p>
+  </div>
+  <div class="nav-item active" data-page="plan" onclick="switchPage('plan')"><span class="nav-icon">📝</span><span>每日计划</span></div>
+  <div class="nav-item" data-page="checkin" onclick="switchPage('checkin')"><span class="nav-icon">✅</span><span>日常打卡</span></div>
+  <div class="nav-item" data-page="expense" onclick="switchPage('expense')"><span class="nav-icon">💴</span><span>记账本</span></div>
+  <div class="nav-item" data-page="mood" onclick="switchPage('mood')"><span class="nav-icon">💗</span><span>心情日记</span></div>
+  <div class="nav-item" data-page="books" onclick="switchPage('books')"><span class="nav-icon">📚</span><span>读书收获</span></div>
+  <div class="nav-item" data-page="english" onclick="switchPage('english')"><span class="nav-icon">✏️</span><span>英语学习</span></div>
+  <div style="flex:1"></div>
+  <div class="data-actions" style="flex-direction:column;gap:8px;padding:12px;background:rgba(255,255,255,.12);border-radius:12px;border:2px dashed rgba(255,255,255,.25)">
+    <button class="btn btn-sm btn-primary" style="width:100%;justify-content:center;background:var(--sakura);color:var(--rose)" onclick="exportData()">📤 导出数据</button>
+    <button class="btn btn-sm btn-outline" style="width:100%;justify-content:center;border-color:#fff;color:#fff;background:transparent" onclick="document.getElementById('importInput').click()">📥 导入备份</button>
+    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main">
+
+<!-- ===== PAGE 1: 每日计划 ===== -->
+<div class="page active" id="page-plan">
+  <div class="page-header">
+    <div><h2>📝 每日计划</h2><p id="todayDatePlan"></p></div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" id="planTotal">0</div><div class="stat-label">总任务</div></div>
+    <div class="stat-card"><div class="stat-num" id="planDone">0</div><div class="stat-label">已完成</div></div>
+    <div class="stat-card"><div class="stat-num" id="planRate">0%</div><div class="stat-label">完成率</div></div>
+    <div class="stat-card"><div class="stat-num" id="planDelay" style="color:var(--high)">0</div><div class="stat-label">⏳ 延期</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">✨ 妮妮，今天要做什么呢？</div>
+    <div class="todo-form">
+      <input type="text" id="todoText" placeholder="输入待办事项...">
+      <select id="todoPriority"><option value="high">🔴 高优先</option><option value="mid" selected>🟡 中优先</option><option value="low">🟢 低优先</option></select>
+      <select id="todoCategory"><option value="生活办事">🏠 生活办事</option><option value="学习" selected>📖 学习</option><option value="工作">💼 工作</option><option value="娱乐">🎮 娱乐</option><option value="手工">✂️ 手工</option></select>
+      <button class="btn btn-primary" onclick="addTodo()">添加</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 今日任务清单</div>
+    <div class="todo-list" id="todoList"></div>
+    <div class="progress-bar"><div class="progress-fill" id="planProgressBar" style="width:0%"></div></div>
+  </div>
+  <div class="card" id="delayCard" style="display:none;border-color:var(--high);border-left:5px solid var(--high)">
+    <div class="card-title" style="color:var(--high)">⏳ 未完成任务（Delay）</div>
+    <div class="todo-list" id="delayList"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 本月任务分布</div>
+    <div class="chart-container"><canvas id="todoSummaryChart"></canvas></div>
+    <p style="text-align:center;margin-top:10px;font-size:13px;color:var(--text-light)" id="todoSummaryText"></p>
+  </div>
+</div>
+
+<!-- ===== PAGE 2: 日常打卡 ===== -->
+<div class="page" id="page-checkin">
+  <div class="page-header">
+    <div><h2>✅ 日常打卡</h2><p id="todayDateCheckin"></p></div>
+  </div>
+  <div class="checkin-grid" id="checkinGrid">
+    <!-- 早睡 -->
+    <div class="checkin-card" id="ci-sleep">
+      <div class="checkin-header"><h3>😴 早睡打卡</h3><span class="checkin-emoji">🌙</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input id="time-sleep" style="flex:1;padding:8px 12px;font-size:13px;text-align:center" placeholder="入睡时间，如 23:30">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="checkin-btn unchecked" id="btn-sleep-good" onclick="setCheckinStatus('sleep','good')" style="flex:1">成功</button>
+        <button class="checkin-btn unchecked" id="btn-sleep-bad" onclick="setCheckinStatus('sleep','bad')" style="flex:1">失败</button>
+      </div>
+      <div class="checkin-cal-toggle" onclick="toggleCalendar('sleep')">📅 本月打卡记录 ▸</div>
+      <div class="checkin-calendar" id="cal-sleep"></div>
+    </div>
+    <!-- 早起 -->
+    <div class="checkin-card" id="ci-wake">
+      <div class="checkin-header"><h3>🌅 早起打卡</h3><span class="checkin-emoji">☀️</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input id="time-wake" style="flex:1;padding:8px 12px;font-size:13px;text-align:center" placeholder="起床时间，如 07:00">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="checkin-btn unchecked" id="btn-wake-good" onclick="setCheckinStatus('wake','good')" style="flex:1">成功</button>
+        <button class="checkin-btn unchecked" id="btn-wake-bad" onclick="setCheckinStatus('wake','bad')" style="flex:1">失败</button>
+      </div>
+      <div class="checkin-cal-toggle" onclick="toggleCalendar('wake')">📅 本月打卡记录 ▸</div>
+      <div class="checkin-calendar" id="cal-wake"></div>
+    </div>
+    <!-- 喝水 -->
+    <div class="checkin-card" id="ci-water">
+      <div class="checkin-header"><h3>💧 8杯水打卡</h3><span class="checkin-emoji">💦</span></div>
+      <div id="waterCups" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
+      <p style="font-size:13px;color:var(--text-light)" id="waterCount">已喝 0 / 8 杯</p>
+      <div class="checkin-cal-toggle" onclick="toggleCalendar('water')">📅 本月打卡记录 ▸</div>
+      <div class="checkin-calendar" id="cal-water"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE 3: 记账本 ===== -->
+<div class="page" id="page-expense">
+  <div class="page-header">
+    <div><h2>💴 记账本</h2><p id="todayDateExpense"></p></div>
+  </div>
+  <div class="card">
+    <div class="card-title">➕ 记一笔开销</div>
+    <div class="cat-tags" id="catTags"></div>
+    <div class="expense-form">
+      <input type="number" id="expAmount" placeholder="金额" step="0.01" min="0">
+      <input type="text" id="expDesc" placeholder="备注（可选）">
+      <button class="btn btn-primary" onclick="addExpense()">记一笔</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 今日开销</div>
+    <div class="expense-total" id="expenseTotal">¥0.00</div>
+    <div class="expense-list" id="expenseList"></div>
+    <div class="chart-container"><canvas id="expenseChart"></canvas></div>
+  </div>
+</div>
+
+<!-- ===== PAGE 4: 心情日记 ===== -->
+<div class="page" id="page-mood">
+  <div class="page-header">
+    <div><h2>💗 心情日记</h2><p id="todayDateMood"></p></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🌈 妮妮今天心情怎么样？</div>
+    <div class="mood-today">
+      <div class="mood-emoji-big" id="moodBigEmoji">🤔</div>
+      <div class="mood-input-area">
+        <div class="mood-options" id="moodOptions"></div>
+        <div class="mood-word-input" style="margin-top:12px">
+          <input type="text" id="moodWord" placeholder="用一个词形容今天..." style="flex:1">
+          <button class="btn btn-primary" onclick="saveMood()">记录</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📈 本周心情曲线</div>
+    <div class="chart-container-mood"><canvas id="moodChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📝 心情记录本</div>
+    <div id="moodHistory"></div>
+  </div>
+</div>
+
+<!-- ===== PAGE 5: 读书收获 ===== -->
+<div class="page" id="page-books">
+  <div class="page-header">
+    <div><h2>📚 读书收获</h2><p>妮妮的阅读角 🌸</p></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📚 添加新书</div>
+    <div class="book-form">
+      <input type="text" id="bookName" placeholder="书名">
+      <input type="text" id="bookAuthor" placeholder="作者">
+      <select id="bookType"><option value="小说">📖 小说</option><option value="非虚构">📰 非虚构</option><option value="历史">🏛️ 历史</option><option value="科幻">🚀 科幻</option><option value="心理学">🧠 心理学</option><option value="哲学">💭 哲学</option><option value="传记">👤 传记</option><option value="经济">📈 经济</option><option value="技术">💻 技术</option><option value="教育">🎓 教育</option><option value="漫画">🎨 漫画</option><option value="其他">📚 其他</option></select>
+      <input type="number" id="bookPages" placeholder="总页数" min="1">
+      <input type="text" id="bookWords" placeholder="总字数（如 12.5万）">
+      <select id="bookRating"><option value="0">评分</option><option value="1">⭐</option><option value="2">⭐⭐</option><option value="3">⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="5">⭐⭐⭐⭐⭐</option></select>
+      <button class="btn btn-primary" onclick="addBook()">添加</button>
+    </div>
+  </div>
+  <div id="bookList"></div>
+</div>
+
+<!-- ===== PAGE 6: 英语学习 ===== -->
+<div class="page" id="page-english">
+  <div class="page-header">
+    <div><h2>✏️ 英语学习</h2><p>每天进步一点点 ✨</p></div>
+  </div>
+  <!-- 模块1：YOUTUBE视频跟读 -->
+  <div class="card" id="ci-engread">
+    <div class="card-title">🎬 YOUTUBE 视频跟读</div>
+    <p style="margin-bottom:6px;color:var(--text-light);font-size:14px">西瓜英语语料库 — 跟读练习素材</p>
+    <a href="https://docs.qq.com/aio/DSUFDTXpmbEJ0R1hD" target="_blank" style="color:var(--rose);font-weight:600;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:14px">📄 打开腾讯文档 ↗</a>
+    <div style="border-top:2px dashed var(--border);padding-top:14px;margin-top:6px">
+      <div style="display:flex;gap:10px;margin-bottom:10px">
+        <button class="checkin-btn unchecked" id="btn-engread-new" onclick="toggleEngRead('new')" style="flex:1">📖 新学习</button>
+        <button class="checkin-btn unchecked" id="btn-engread-review" onclick="toggleEngRead('review')" style="flex:1">🔄 复习</button>
+      </div>
+      <div class="checkin-cal-toggle" onclick="toggleCalendar('engread')">📅 本月打卡记录 ▸</div>
+      <div class="checkin-calendar" id="cal-engread"></div>
+    </div>
+  </div>
+  <!-- 模块2：英语思维训练课程 -->
+  <div class="card">
+    <div class="card-title">🧠 英语思维训练课程</div>
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:13px;color:var(--text-light)">课程进度</span>
+        <span style="font-size:14px;font-weight:700;color:var(--rose)" id="thinkProgress">0%</span>
+      </div>
+      <div class="progress-bar" style="height:8px"><div class="progress-fill" id="thinkBar" style="width:0%"></div></div>
+    </div>
+    <div id="thinkLessonList"></div>
+  </div>
+  <!-- 模块3：情景英语 -->
+  <div class="card" id="ci-engscene">
+    <div class="card-title" style="cursor:pointer" onclick="document.getElementById('sceneBody').classList.toggle('show');this.querySelector('.fs-arrow').textContent=document.getElementById('sceneBody').classList.contains('show')?'▾':'▸'">🎭 情景英语 <span class="fs-arrow">▾</span></div>
+    <div id="sceneBody" class="checkin-calendar show" style="border:none;padding:0;background:transparent">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="text" id="sceneName" placeholder="今天学了什么情景？如：餐厅点餐" style="flex:1;font-size:13px">
+      <button class="btn btn-primary btn-sm" onclick="addScene()">保存</button>
+    </div>
+    <div id="sceneList"></div>
+    <div style="border-top:2px dashed var(--border);padding-top:12px;margin-top:12px">
+      <div style="display:flex;gap:10px;margin-bottom:10px">
+        <button class="checkin-btn unchecked" id="btn-engscene-new" onclick="toggleEngScene('new')" style="flex:1">📖 新学习</button>
+        <button class="checkin-btn unchecked" id="btn-engscene-review" onclick="toggleEngScene('review')" style="flex:1">🔄 复习</button>
+      </div>
+      <div class="checkin-cal-toggle" onclick="toggleCalendar('engscene')">📅 本月打卡记录 ▸</div>
+      <div class="checkin-calendar" id="cal-engscene"></div>
+    </div>
+    </div>
+  </div>
+  <!-- 模块4：生活场景跟读 -->
+  <div class="card" id="ci-lifescene">
+    <div class="card-title">🏠 生活场景跟读</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="text" id="lifeSceneName" placeholder="今天跟读了什么场景？如：超市购物、看病就医..." style="flex:1;font-size:13px">
+      <button class="btn btn-primary btn-sm" onclick="addLifeScene()">保存</button>
+    </div>
+    <div id="lifeSceneList"></div>
+    <div style="border-top:2px dashed var(--border);padding-top:12px;margin-top:12px">
+      <div style="display:flex;gap:10px;margin-bottom:10px">
+        <button class="checkin-btn unchecked" id="btn-lifescene-new" onclick="toggleLifeScene('new')" style="flex:1">📖 新学习</button>
+        <button class="checkin-btn unchecked" id="btn-lifescene-review" onclick="toggleLifeScene('review')" style="flex:1">🔄 复习</button>
+      </div>
+      <div class="checkin-cal-toggle" onclick="toggleCalendar('lifescene')">📅 本月打卡记录 ▸</div>
+      <div class="checkin-calendar" id="cal-lifescene"></div>
+    </div>
+  </div>
+  <!-- 英语学习宝典 -->
+  <div class="card" style="background:linear-gradient(135deg,#FFF8E7,#FFF3E0);border:2px solid #FFCC80;border-left:6px solid #FF9800;box-shadow:0 4px 20px rgba(255,152,0,.12)">
+    <div class="card-title" style="color:#E65100;cursor:pointer" onclick="toggleWordbook()">📖 英语学习宝典 <span id="wbArrow" style="font-size:14px">▸</span></div>
+    <div id="wordbook" style="display:none;padding-top:8px"></div>
+  </div>
+</div>
+
+</main>
+
+<!-- AI Floating Window -->
+<div class="ai-float">
+  <div class="ai-panel" id="aiPanel">
+    <div class="ai-panel-head">🤖 妮妮AI助手</div>
+    <div class="ai-panel-body">
+      <textarea id="aiInput" placeholder="告诉妮妮你的事，如：&#10;• 花了50块吃午饭&#10;• 今天心情超开心&#10;• 喝了第3杯水&#10;• 读《三体》到第120页"></textarea>
+      <p class="ai-hint">💡 妮妮会自动识别并填入对应模块哦~</p>
+      <div class="ai-result" id="aiResult"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px" onclick="processAI()">✨ 妮妮帮帮你！</button>
+    </div>
+  </div>
+  <button class="ai-btn" onclick="toggleAIPanel()" title="AI助手">🤖</button>
+</div>
+
+<script>
+// ========== Utils ==========
+const TODAY = new Date().toISOString().slice(0,10);
+const CATS = ['餐饮','交通','购物','娱乐','住房','医疗','教育','通讯','服饰','美妆','社交','其他'];
+const MOODS = [{e:'😄',w:'开心',v:5},{e:'😊',w:'愉快',v:4},{e:'😐',w:'平静',v:3},{e:'😔',w:'低落',v:2},{e:'😢',w:'难过',v:1},{e:'😤',w:'烦躁',v:1.5},{e:'😴',w:'困倦',v:2.5},{e:'🥰',w:'幸福',v:5},{e:'😎',w:'自信',v:4.5},{e:'🤔',w:'思考',v:3},{e:'🥹',w:'感动',v:4.5},{e:'😫',w:'疲惫',v:1.5},{e:'🥺',w:'委屈',v:2}];
+let selectedCat = '餐饮';
+let selectedMood = null;
+let expenseChart = null, moodChart = null, todoSummaryChart = null;
+
+function $(id){return document.getElementById(id)}
+function getData(key){try{return JSON.parse(localStorage.getItem(key)||'null')}catch(e){return null}}
+function setData(key,val){localStorage.setItem(key,JSON.stringify(val))}
+
+function initKey(key,def){if(getData(key)===null)setData(key,def)}
+
+// Initialize all keys
+['todos','checkins','expenses','moods','books'].forEach(k=>{
+  if(k==='todos')initKey(k,{});
+  else if(k==='checkins')initKey(k,{});
+  else if(k==='expenses')initKey(k,{});
+  else if(k==='moods')initKey(k,{});
+  else if(k==='books')initKey(k,[]);
+});
+
+// ========== Page Switch ==========
+function switchPage(name){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
+  if(name==='expense'){renderExpenseChart();}
+  if(name==='mood'){renderMoodChart();renderMoodHistory();}
+  if(name==='plan'){renderTodoSummary();}
+  if(name==='english'){renderEngRead();renderEngScene();renderSceneList();renderLifeSceneList();}
+}
+
+// ========== Date Display ==========
+$('todayDatePlan').textContent = formatDate();
+$('todayDateCheckin').textContent = formatDate();
+$('todayDateExpense').textContent = formatDate();
+$('todayDateMood').textContent = formatDate();
+function formatDate(){
+  const d=new Date(),ws=['日','一','二','三','四','五','六'];
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 星期${ws[d.getDay()]}`;
+}
+
+// ========== MODULE 1: Todos ==========
+function getTodos(){return getData('todos')[TODAY]||[]}
+function saveTodos(t){let all=getData('todos');all[TODAY]=t;setData('todos',all)}
+
+function addTodo(){
+  const text=$('todoText').value.trim();if(!text)return;
+  const pri=$('todoPriority').value,cat=$('todoCategory').value;
+  const todos=getTodos();todos.push({id:Date.now(),text,pri,cat,done:false});
+  saveTodos(todos);$('todoText').value='';renderTodos();
+}
+
+function toggleTodo(id){
+  const todos=getTodos();const t=todos.find(x=>x.id===id);if(t)t.done=!t.done;
+  saveTodos(todos);renderTodos();
+}
+
+function delTodo(id){saveTodos(getTodos().filter(x=>x.id!==id));renderTodos()}
+
+function renderTodos(){
+  const todos=getTodos();const list=$('todoList');
+  const done=todos.filter(x=>x.done),delay=todos.filter(x=>!x.done);
+  const total=todos.length;
+  $('planTotal').textContent=total;$('planDone').textContent=done.length;
+  $('planDelay').textContent=delay.length;
+  const rate=total?Math.round(done.length/total*100):0;
+  $('planRate').textContent=rate+'%';$('planProgressBar').style.width=rate+'%';
+  if(!total){list.innerHTML='<p style="text-align:center;color:var(--text-light);padding:20px">暂无任务哦，妮妮快去添加一个吧~ 🌸</p>';$('delayCard').style.display='none';return;}
+  list.innerHTML=todos.map(t=>`
+    <div class="todo-item ${t.done?'done':''}">
+      <div class="todo-check ${t.done?'checked':''}" onclick="toggleTodo(${t.id})">${t.done?'✓':''}</div>
+      <span class="priority-tag p${t.pri}">${t.pri==='high'?'高':t.pri==='mid'?'中':'低'}</span>
+      <span class="cat-todo cat-${catClass(t.cat)}">${catLabel(t.cat)}</span>
+      <span class="todo-text">${escHtml(t.text)}</span>
+      <span class="todo-del" onclick="delTodo(${t.id})">×</span>
+    </div>`).join('');
+  // 延期任务区域
+  const delayCard=$('delayCard'),delayList=$('delayList');
+  if(delay.length){
+    delayCard.style.display='block';
+    delayList.innerHTML=delay.map(t=>`
+      <div class="todo-item" style="border-left-color:${t.pri==='high'?'var(--high)':t.pri==='mid'?'var(--mid)':'var(--low)'}">
+        <div class="todo-check" onclick="toggleTodo(${t.id})"></div>
+        <span class="priority-tag p${t.pri}">${t.pri==='high'?'高':t.pri==='mid'?'中':'低'}</span>
+        <span class="cat-todo cat-${catClass(t.cat)}">${catLabel(t.cat)}</span>
+        <span class="todo-text">${escHtml(t.text)}</span>
+        <span class="todo-del" onclick="delTodo(${t.id})">×</span>
+      </div>`).join('');
+  }else{
+    delayCard.style.display='none';
+  }
+  renderTodoSummary();
+}
+function catClass(c){return ({'生活办事':'life','学习':'study','工作':'work','娱乐':'fun','手工':'hand'})[c]||'life'}
+function catLabel(c){return ({'生活办事':'🏠 生活','学习':'📖 学习','工作':'💼 工作','娱乐':'🎮 娱乐','手工':'✂️ 手工'})[c]||c}
+
+function renderTodoSummary(){
+  const allTodos=getData('todos');
+  const now=new Date(),ym=now.getFullYear()+'-'+(now.getMonth()+1);
+  const byCat={};
+  let totalMonth=0;
+  Object.keys(allTodos).forEach(day=>{
+    if(day.startsWith(ym.substring(0,4)+'-')&&parseInt(day.split('-')[1])===now.getMonth()+1){
+      allTodos[day].forEach(t=>{
+        const c=t.cat||'生活办事';
+        byCat[c]=(byCat[c]||0)+1;totalMonth++;
+      });
+    }
+  });
+  const cats=['学习','工作','生活办事','娱乐','手工'];
+  const labels=cats.filter(c=>byCat[c]);
+  const data=labels.map(c=>byCat[c]||0);
+  const catColors={'学习':'#3F51B5','工作':'#00897B','生活办事':'#E91E63','娱乐':'#FFA726','手工':'#8E24AA'};
+  if(todoSummaryChart)todoSummaryChart.destroy();
+  const ctx=$('todoSummaryChart').getContext('2d');
+  if(!totalMonth){
+    ctx.clearRect(0,0,$('todoSummaryChart').width,$('todoSummaryChart').height);
+    $('todoSummaryText').textContent='本月还没有任务记录哦，妮妮加油~';
+    return;
+  }
+  $('todoSummaryText').textContent=`本月共 ${totalMonth} 个任务`;
+  todoSummaryChart=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:labels.map(c=>catColors[c]),borderWidth:3,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{padding:14,usePointStyle:true,pointStyleWidth:10,font:{size:13}}}}}
+  });
+}
+
+// ========== MODULE 2: Checkin ==========
+function getCheckins(){return getData('checkins')[TODAY]||{}}
+function saveCheckins(c){let all=getData('checkins');all[TODAY]=c;setData('checkins',all)}
+
+function setCheckinStatus(type,status){
+  try{
+    var c=getCheckins();
+    if(typeof c[type]!=='object'||!c[type])c[type]={};
+    c[type].status=c[type].status===status?null:status;
+    var te=$('time-'+type);if(te&&te.value.trim())c[type].time=te.value.trim();
+    saveCheckins(c);renderCheckins();
+  }catch(e){alert('出错：'+e.message)}
+}
+
+function toggleWaterCup(idx){
+  const c=getCheckins();if(!c.water)c.water=[];
+  const i=c.water.indexOf(idx);if(i>-1)c.water.splice(i,1);else c.water.push(idx);
+  saveCheckins(c);renderWaterCups();
+}
+
+function renderCheckins(){
+  try{
+  var c=getCheckins(),sd=c.sleep||{},sw=c.wake||{};
+  var sg=$('btn-sleep-good'),sb=$('btn-sleep-bad'),wg=$('btn-wake-good'),wb=$('btn-wake-bad');
+  if(sg){sg.className='checkin-btn '+(sd.status==='good'?'checked':'unchecked')}
+  if(sb){sb.className='checkin-btn'+(sd.status==='bad'?' checked':' unchecked');sb.style.background=sd.status==='bad'?'#FFCDD2':'';sb.style.color=sd.status==='bad'?'#C62828':''}
+  if(wg){wg.className='checkin-btn '+(sw.status==='good'?'checked':'unchecked')}
+  if(wb){wb.className='checkin-btn'+(sw.status==='bad'?' checked':' unchecked');wb.style.background=sw.status==='bad'?'#FFCDD2':'';wb.style.color=sw.status==='bad'?'#C62828':''}
+  var ts=$('time-sleep'),tw=$('time-wake');
+  if(ts)ts.value=sd.time||'';
+  if(tw)tw.value=sw.time||'';
+  var cs=$('ci-sleep'),cw=$('ci-wake');
+  if(cs)cs.className='checkin-card'+(sd.status?' done':'');
+  if(cw)cw.className='checkin-card'+(sw.status?' done':'');
+  renderWaterCups();
+  ['sleep','wake','water'].forEach(function(t){var el=$('cal-'+t);if(el&&el.classList.contains('show'))renderCalendar(t)});
+  }catch(e){}
+}
+
+function renderWaterCups(){
+  const c=getCheckins();const w=c.water||[];
+  let html='';
+  for(let i=0;i<8;i++){
+    const checked=w.includes(i);
+    html+=`<div onclick="toggleWaterCup(${i})" style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:.2s;border:2px solid ${checked?'#81C784':'var(--pink)'};background:${checked?'#E8F5E9':'#fff'}">${checked?'💧':'🥤'}</div>`;
+  }
+  $('waterCups').innerHTML=html;
+  $('waterCount').textContent=`已喝 ${w.length} / 8 杯`;
+  if(w.length>=8)$('ci-water').classList.add('done');else $('ci-water').classList.remove('done');
+}
+
+// ========== Checkin Calendar ==========
+function toggleCalendar(type){
+  const el=$('cal-'+type);
+  const toggle=el.parentElement.querySelector('.checkin-cal-toggle');
+  const isOpen=el.classList.contains('show');
+  el.classList.toggle('show');
+  toggle.innerHTML='📅 本月打卡记录 '+(isOpen?'▸':'▾');
+  if(!isOpen)renderCalendar(type);
+}
+
+function renderCalendar(type){
+  const el=$('cal-'+type);if(!el.classList.contains('show'))return;
+  const allCheckins=type==='engread'?getData('engcheckins'):type==='engscene'?getData('scene_checkins'):type==='lifescene'?getData('life_scene_checkins'):getData('checkins');
+  const now=new Date(),year=now.getFullYear(),month=now.getMonth();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const firstDay=(new Date(year,month,1).getDay()+6)%7;
+  const today=now.getDate();
+  let checkedDays=0;
+  let cells='';
+  for(let i=0;i<firstDay;i++)cells+='<div class="cal-day empty"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const key=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const data=allCheckins?allCheckins[key]||{}:{};
+    let checked=false;
+    if(type==='engread'||type==='engscene'||type==='lifescene'){
+      const nw=!!data.new,rv=!!data.review;
+      if(nw&&rv){checked=true;cls='cal-day both'}
+      else if(nw){checked=true;cls='cal-day new-only'}
+      else if(rv){checked=true;cls='cal-day review-only'}
+      else cls='cal-day missed';
+    }
+    else if(type==='sleep'||type==='wake'){
+      const sd=data[type]&&typeof data[type]==='object'?data[type]:{};
+      if(sd.status==='good'){checked=true;cls='cal-day checked';}
+      else if(sd.status==='bad'){checked=true;cls='cal-day missed';}
+      else cls='cal-day missed';
+      if(sd.time)cls+=' cal-timed';else cls+=' cal-plain';
+    }
+    else if(type==='water'){const w=data.water||[];checked=w.length>=8;cls='cal-day'+(checked?' checked':' missed');}
+    else{checked=false;cls='cal-day missed';}
+    if(checked)checkedDays++;
+    if(d===today)cls+=' today';
+    const display=type==='sleep'||type==='wake'?(data[type]&&data[type].time||d):d;
+    cells+=`<div class="${cls}">${display}</div>`;
+  }
+  el.innerHTML=`
+    <div class="cal-month-label">${year}年${month+1}月</div>
+    <div class="cal-grid">
+      <div class="cal-day-head">一</div><div class="cal-day-head">二</div><div class="cal-day-head">三</div>
+      <div class="cal-day-head">四</div><div class="cal-day-head">五</div><div class="cal-day-head">六</div><div class="cal-day-head">日</div>
+      ${cells}
+    </div>
+    <div class="cal-summary">本月已打卡 <b>${checkedDays}</b> / ${daysInMonth} 天</div>
+    ${(type==='engread'||type==='engscene'||type==='lifescene')?`<div style="display:flex;gap:10px;justify-content:center;margin-top:6px;font-size:11px;color:var(--text-light);flex-wrap:wrap">
+      <span>🟢 新学习</span><span>🟣 复习</span><span>🟩 两者</span><span>🔴 未打卡</span>
+    </div>`:''}
+    ${(type==='sleep'||type==='wake')?`<div style="display:flex;gap:10px;justify-content:center;margin-top:6px;font-size:11px;color:var(--text-light)">
+      <span>🟢 成功</span><span>🔴 失败</span><span>⬜ 无记录</span>
+    </div>`:''}`;
+}
+
+// ========== English Reading Checkin ==========
+function getEngCheckins(){return getData('engcheckins')||{}}
+function saveEngCheckins(c){setData('engcheckins',c)}
+
+function toggleEngRead(kind){
+  const c=getEngCheckins();c[TODAY]=c[TODAY]||{};
+  c[TODAY][kind]=!c[TODAY][kind];
+  saveEngCheckins(c);renderEngRead();
+}
+
+function renderEngRead(){
+  const c=getEngCheckins();const today=c[TODAY]||{};
+  const nw=!!today.new,rv=!!today.review;
+  const btnNew=$('btn-engread-new'),btnReview=$('btn-engread-review');
+  btnNew.className='checkin-btn '+(nw?'checked':'unchecked');
+  btnNew.textContent=nw?'📖 已打卡 ✓':'📖 新学习';
+  btnReview.className='checkin-btn '+(rv?'checked':'unchecked');
+  btnReview.textContent=rv?'🔄 已打卡 ✓':'🔄 复习';
+  $('ci-engread').className='card'+(nw||rv?' done':'');
+  if($('cal-engread').classList.contains('show'))renderCalendar('engread');
+}
+
+// ========== English Scene Checkin ==========
+function getSceneData(){return getData('scene_data')||[]}
+function saveSceneData(d){setData('scene_data',d)}
+function getSceneCheckins(){return getData('scene_checkins')||{}}
+function saveSceneCheckins(c){setData('scene_checkins',c)}
+
+function addScene(){
+  const name=$('sceneName').value.trim();if(!name)return;
+  const d=getSceneData();d.push({id:Date.now(),date:TODAY,name,words:[]});
+  saveSceneData(d);$('sceneName').value='';renderSceneList();
+}
+
+function addSceneWord(sid){
+  const input=$('snote-'+sid);const text=input.value.trim();if(!text)return;
+  const d=getSceneData();const s=d.find(x=>x.id===sid);if(!s)return;
+  s.words.push({text,time:new Date().toLocaleDateString('zh-CN')});saveSceneData(d);input.value='';
+  renderSceneList();
+}
+
+function delSceneWord(sid,idx){
+  const d=getSceneData();const s=d.find(x=>x.id===sid);if(!s)return;
+  s.words.splice(idx,1);saveSceneData(d);renderSceneList();
+}
+
+function delScene(id){
+  if(!confirm('删除这个情景？单词也会一起删除哦'))return;
+  const d=getSceneData().filter(x=>x.id!==id);saveSceneData(d);renderSceneList();
+}
+
+function renderSceneList(){
+  const all=getSceneData();
+  const todayScenes=all.filter(x=>x.date===TODAY);
+  if(!todayScenes.length){$('sceneList').innerHTML='<p style="text-align:center;color:var(--text-light);padding:10px;font-size:13px">今天还没有记录情景哦~</p>';return;}
+  let html='';
+  todayScenes.forEach(s=>{
+    const dateLabel=s.date===TODAY?'今天':s.date.slice(5);
+    html+=`
+    <div style="background:var(--cream);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="this.nextElementSibling.classList.toggle('show');this.querySelector('.fold-arrow').textContent=this.nextElementSibling.classList.contains('show')?'▾':'▸'">
+        <div>
+          <span style="font-weight:700;font-size:14px;color:var(--dark)">📍 ${escHtml(s.name)}</span>
+          <span style="font-size:11px;color:var(--text-light);margin-left:8px">${dateLabel}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="fold-arrow">▾</span>
+          <span class="todo-del" onclick="event.stopPropagation();delScene(${s.id})">×</span>
+        </div>
+      </div>
+      <div class="checkin-calendar show" style="margin-top:8px;border:none;padding:8px 0 0 0;background:transparent">`;
+    if(s.words.length){
+      html+=`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`;
+      s.words.forEach((w,i)=>html+=`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all">${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delSceneWord(${s.id},${i})">×</span></span>`);
+      html+=`</div>`;
+    }
+    html+=`
+      <div style="display:flex;gap:6px">
+        <input id="snote-${s.id}" placeholder="记录单词、短语或句子..." style="flex:1;padding:6px 10px;font-size:12px" onkeydown="if(event.key==='Enter')addSceneWord(${s.id})">
+        <button class="btn btn-sm btn-primary" onclick="addSceneWord(${s.id})">+</button>
+      </div>
+      </div>
+    </div>`;
+  });
+  $('sceneList').innerHTML=html;
+  renderWordbook();
+}
+
+// Wordbook
+function toggleWordbook(){
+  const wb=$('wordbook'),arrow=$('wbArrow');
+  const isOpen=wb.style.display==='block';
+  wb.style.display=isOpen?'none':'block';
+  arrow.textContent=isOpen?'▸':'▾';
+  if(!isOpen)renderWordbook();
+}
+
+function renderWordbook(){
+  const wb=$('wordbook');if(wb.style.display==='none')return;
+  const all=getSceneData().concat(getLifeSceneData()),allWords=[];
+  all.forEach(s=>s.words.forEach(w=>allWords.push({text:w.text,scene:s.name,date:s.date})));
+  if(!allWords.length){wb.innerHTML='<p style="text-align:center;color:var(--text-light);padding:16px">还没有记录单词哦，去情景英语里添加吧~</p>';return;}
+  const groups={};
+  allWords.forEach(w=>{
+    const l=(w.text.charAt(0)||'#').toUpperCase();if(!groups[l])groups[l]=[];groups[l].push(w);
+  });
+  const sortedKeys=Object.keys(groups).sort();
+  let html=`<div style="font-size:13px;color:var(--text-light);margin-bottom:10px">共 <b>${allWords.length}</b> 条记录</div>`;
+  sortedKeys.forEach(l=>{
+    html+=`<div style="font-weight:700;color:var(--rose);margin:10px 0 4px 0;font-size:15px">${l}</div>`;
+    groups[l].forEach(w=>{
+      html+=`<div style="display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid var(--border);font-size:13px">
+        <span>${escHtml(w.text)}</span>
+        <span style="color:var(--text-light);font-size:11px;margin-left:8px;white-space:nowrap">${escHtml(w.scene)}</span>
+      </div>`;
+    });
+  });
+  wb.innerHTML=html;
+}
+
+function toggleEngScene(kind){
+  const c=getSceneCheckins();c[TODAY]=c[TODAY]||{};
+  c[TODAY][kind]=!c[TODAY][kind];
+  saveSceneCheckins(c);renderEngScene();
+}
+
+function renderEngScene(){
+  const c=getSceneCheckins();const today=c[TODAY]||{};
+  const nw=!!today.new,rv=!!today.review;
+  const btnNew=$('btn-engscene-new'),btnReview=$('btn-engscene-review');
+  btnNew.className='checkin-btn '+(nw?'checked':'unchecked');
+  btnNew.textContent=nw?'📖 已打卡 ✓':'📖 新学习';
+  btnReview.className='checkin-btn '+(rv?'checked':'unchecked');
+  btnReview.textContent=rv?'🔄 已打卡 ✓':'🔄 复习';
+  if($('cal-engscene').classList.contains('show'))renderCalendar('engscene');
+}
+
+// ========== Life Scene Checkin ==========
+function getLifeSceneData(){return getData('life_scene_data')||[]}
+function saveLifeSceneData(d){setData('life_scene_data',d)}
+function getLifeSceneCheckins(){return getData('life_scene_checkins')||{}}
+function saveLifeSceneCheckins(c){setData('life_scene_checkins',c)}
+
+function addLifeScene(){
+  const name=$('lifeSceneName').value.trim();if(!name)return;
+  const d=getLifeSceneData();d.push({id:Date.now(),date:TODAY,name,words:[]});
+  saveLifeSceneData(d);$('lifeSceneName').value='';renderLifeSceneList();
+}
+
+function addLifeSceneWord(sid){
+  const input=$('lsnote-'+sid);const text=input.value.trim();if(!text)return;
+  const d=getLifeSceneData();const s=d.find(x=>x.id===sid);if(!s)return;
+  s.words.push({text,time:new Date().toLocaleDateString('zh-CN')});saveLifeSceneData(d);input.value='';
+  renderLifeSceneList();
+}
+
+function delLifeSceneWord(sid,idx){
+  const d=getLifeSceneData();const s=d.find(x=>x.id===sid);if(!s)return;
+  s.words.splice(idx,1);saveLifeSceneData(d);renderLifeSceneList();
+}
+
+function delLifeScene(id){
+  if(!confirm('删除这个场景？'))return;
+  const d=getLifeSceneData().filter(x=>x.id!==id);saveLifeSceneData(d);renderLifeSceneList();
+}
+
+function renderLifeSceneList(){
+  const all=getLifeSceneData();
+  const todayScenes=all.filter(x=>x.date===TODAY);
+  if(!todayScenes.length){$('lifeSceneList').innerHTML='<p style="text-align:center;color:var(--text-light);padding:10px;font-size:13px">今天还没有记录场景哦~</p>';return;}
+  let html='';
+  todayScenes.forEach(s=>{
+    html+=`
+    <div style="background:var(--cream);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="this.nextElementSibling.classList.toggle('show');this.querySelector('.lf-arrow').textContent=this.nextElementSibling.classList.contains('show')?'▾':'▸'">
+        <div><span style="font-weight:700;font-size:14px;color:var(--dark)">📍 ${escHtml(s.name)}</span><span style="font-size:11px;color:var(--text-light);margin-left:8px">${s.date===TODAY?'今天':s.date.slice(5)}</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><span class="lf-arrow">▾</span><span class="todo-del" onclick="event.stopPropagation();delLifeScene(${s.id})">×</span></div>
+      </div>
+      <div class="checkin-calendar show" style="margin-top:8px;border:none;padding:8px 0 0 0;background:transparent">`;
+    if(s.words.length){
+      html+=`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`;
+      s.words.forEach((w,i)=>html+=`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all">${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delLifeSceneWord(${s.id},${i})">×</span></span>`);
+      html+=`</div>`;
+    }
+    html+=`
+      <div style="display:flex;gap:6px">
+        <input id="lsnote-${s.id}" placeholder="记录单词、短语或句子..." style="flex:1;padding:6px 10px;font-size:12px" onkeydown="if(event.key==='Enter')addLifeSceneWord(${s.id})">
+        <button class="btn btn-sm btn-primary" onclick="addLifeSceneWord(${s.id})">+</button>
+      </div></div></div>`;
+  });
+  $('lifeSceneList').innerHTML=html;
+  renderWordbook();
+}
+
+function toggleLifeScene(kind){
+  const c=getLifeSceneCheckins();c[TODAY]=c[TODAY]||{};
+  c[TODAY][kind]=!c[TODAY][kind];
+  saveLifeSceneCheckins(c);renderLifeSceneCk();
+}
+
+function renderLifeSceneCk(){
+  const c=getLifeSceneCheckins();const today=c[TODAY]||{};
+  const nw=!!today.new,rv=!!today.review;
+  const btnNew=$('btn-lifescene-new'),btnReview=$('btn-lifescene-review');
+  btnNew.className='checkin-btn '+(nw?'checked':'unchecked');
+  btnNew.textContent=nw?'📖 已打卡 ✓':'📖 新学习';
+  btnReview.className='checkin-btn '+(rv?'checked':'unchecked');
+  btnReview.textContent=rv?'🔄 已打卡 ✓':'🔄 复习';
+  if($('cal-lifescene').classList.contains('show'))renderCalendar('lifescene');
+}
+
+// ========== English Think Courses ==========
+function getThinkCourses(){return getData('think_courses')||{}}
+function saveThinkCourses(c){setData('think_courses',c)}
+
+function setThinkProgress(n,val){
+  const c=getThinkCourses();v=Math.min(100,Math.max(0,parseInt(val)||0));
+  if(v>0)c[n]=v;else delete c[n];
+  saveThinkCourses(c);renderThinkCourses();
+}
+
+function toggleThinkInput(n){
+  $('think-input-'+n).classList.toggle('show');
+  const inp=$('think-input-num-'+n);if(inp)inp.focus();
+}
+
+function renderThinkCourses(){
+  const c=getThinkCourses(),total=16;
+  let done=0,sum=0;
+  for(let i=1;i<=total;i++){const v=c[i]||0;sum+=v;if(v>=100)done++;}
+  const avgPct=Math.round(sum/total);
+  $('thinkProgress').textContent=avgPct+'% ('+done+'/16 已完成)';
+  $('thinkBar').style.width=avgPct+'%';
+  let html='';
+  for(let i=1;i<=total;i++){
+    const v=c[i]||0,full=v>=100;
+    html+=`
+    <div class="think-item${full?' done':''}">
+      <div class="think-head" onclick="toggleThinkInput(${i})">
+        <span class="think-name">📖 第 ${i} 课</span>
+        <span class="think-pct${full?' full':''}">${v}%</span>
+      </div>
+      <div class="think-lbar" onclick="toggleThinkInput(${i})"><div class="think-lfill" style="width:${v}%"></div></div>
+      <div class="think-input" id="think-input-${i}">
+        <input type="number" id="think-input-num-${i}" min="0" max="100" value="${v}" placeholder="0-100" onkeydown="if(event.key==='Enter')setThinkProgress(${i},this.value)">
+        <button class="btn btn-sm btn-primary" onclick="setThinkProgress(${i},$('think-input-num-${i}').value)">更新</button>
+      </div>
+    </div>`;
+  }
+  $('thinkLessonList').innerHTML=html;
+}
+
+// ========== MODULE 3: Expenses ==========
+function getExpenses(){return getData('expenses')[TODAY]||[]}
+function saveExpenses(e){let all=getData('expenses');all[TODAY]=e;setData('expenses',all)}
+
+function renderCatTags(){
+  $('catTags').innerHTML=CATS.map(c=>`<div class="cat-tag${c===selectedCat?' active':''}" onclick="selectCat('${c}')">${c}</div>`).join('');
+}
+
+function selectCat(cat){selectedCat=cat;renderCatTags()}
+
+function addExpense(){
+  const amt=parseFloat($('expAmount').value);if(!amt||amt<=0)return;
+  const e=getExpenses();e.push({id:Date.now(),cat:selectedCat,amt,desc:$('expDesc').value.trim(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
+  saveExpenses(e);$('expAmount').value='';$('expDesc').value='';
+  renderExpenses();
+}
+
+function delExpense(id){saveExpenses(getExpenses().filter(x=>x.id!==id));renderExpenses()}
+
+function renderExpenses(){
+  const exps=getExpenses();const list=$('expenseList');
+  const total=exps.reduce((s,x)=>s+x.amt,0);
+  $('expenseTotal').textContent='¥'+total.toFixed(2);
+  if(!exps.length){list.innerHTML='<p style="text-align:center;color:var(--text-light);padding:16px">今天还没有花钱哦~ 💴';}
+  else{
+    list.innerHTML=exps.map(e=>`
+      <div class="expense-item"><span><b>${escHtml(e.cat)}</b> ${e.desc?'· '+escHtml(e.desc):''} <small style="color:var(--text-light)">${e.time}</small></span><span class="amt">¥${e.amt.toFixed(2)} <span style="cursor:pointer;font-size:16px" onclick="delExpense(${e.id})">×</span></span></div>`).join('');
+  }
+  renderExpenseChart();
+}
+
+function renderExpenseChart(){
+  const exps=getExpenses();
+  const byCat={};exps.forEach(e=>{byCat[e.cat]=(byCat[e.cat]||0)+e.amt});
+  const labels=Object.keys(byCat),data=Object.values(byCat);
+  /* 粉色系图表配色 */
+  const colors=['#E91E63','#F06292','#F8BBD9','#FFB7C5','#CE93D8','#BA68C8','#FF8A65','#FFD54F','#A1887F','#EC407A','#AB47BC','#90A4AE'];
+  if(expenseChart)expenseChart.destroy();
+  const ctx=$('expenseChart').getContext('2d');
+  if(!labels.length){ctx.clearRect(0,0,$('expenseChart').width,$('expenseChart').height);return;}
+  expenseChart=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors.slice(0,labels.length),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:12,usePointStyle:true,font:{size:12}}}},cutout:'55%'}
+  });
+}
+
+// ========== MODULE 4: Mood ==========
+function getMoods(){return getData('moods')}
+function saveMoods(m){setData('moods',m)}
+
+function renderMoodOptions(){
+  $('moodOptions').innerHTML=MOODS.map(m=>`<div class="mood-opt${selectedMood&&selectedMood.e===m.e?' selected':''}" onclick="pickMood('${m.e}','${m.w}',${m.v})" title="${m.w}">${m.e}</div>`).join('');
+}
+
+function pickMood(e,w,v){
+  selectedMood={e,w,v};$('moodBigEmoji').textContent=e;
+  renderMoodOptions();
+}
+
+function saveMood(){
+  if(!selectedMood){alert('请先选一个心情表情哦~ 💗');return;}
+  const word=$('moodWord').value.trim()||selectedMood.w;
+  const moods=getMoods();moods[TODAY]={emoji:selectedMood.e,word,value:selectedMood.v,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
+  saveMoods(moods);$('moodWord').value='';
+  renderMoodHistory();renderMoodChart();
+  alert('心情已记录！妮妮最棒了 ✨');
+}
+
+function renderMoodHistory(){
+  const moods=getMoods();const el=$('moodHistory');
+  const days=Object.keys(moods).sort().reverse().slice(0,7);
+  if(!days.length){el.innerHTML='<p style="text-align:center;color:var(--text-light);padding:16px">还没有记录哦，妮妮开始记录吧~ 🌸</p>';return;}
+  el.innerHTML=days.map(d=>{const m=moods[d];return `<div class="mood-history-item"><span style="font-size:24px">${m.emoji}</span><span><b>${d}</b> · ${escHtml(m.word)} <small style="color:var(--text-light)">${m.time||''}</small></span></div>`}).join('');
+  // Show today's mood if exists
+  if(moods[TODAY]){$('moodBigEmoji').textContent=moods[TODAY].emoji;selectedMood={e:moods[TODAY].emoji,w:moods[TODAY].word,v:moods[TODAY].value};renderMoodOptions();}
+}
+
+function renderMoodChart(){
+  const moods=getMoods();
+  // Last 7 days
+  const labels=[],data=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);const key=d.toISOString().slice(0,10);
+    labels.push(key.slice(5));
+    data.push(moods[key]?moods[key].value:null);
+  }
+  if(moodChart)moodChart.destroy();
+  const ctx=$('moodChart').getContext('2d');
+  moodChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:'心情值',
+        data,
+        borderColor:'#E91E63',
+        backgroundColor:'rgba(233,30,99,0.08)',
+        fill:true,
+        tension:.4,
+        pointRadius:6,
+        pointBackgroundColor:'#E91E63',
+        borderWidth:2.5,
+        spanGaps:true
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      scales:{y:{min:0,max:5.5,ticks:{stepSize:1,callback:v=>[,'😢','😔','😐','😊','😄'][Math.round(v)]||''},grid:{color:'rgba(0,0,0,.05)'}},x:{grid:{color:'rgba(0,0,0,.05)'}}},
+      plugins:{legend:{display:false}}
+    }
+  });
+}
+
+// ========== MODULE 5: Books ==========
+function getBooks(){return getData('books')}
+function saveBooks(b){setData('books',b)}
+
+function addBook(){
+  const name=$('bookName').value.trim(),author=$('bookAuthor').value.trim(),pages=parseInt($('bookPages').value);
+  const type=$('bookType').value,words=$('bookWords').value.trim(),rating=parseInt($('bookRating').value);
+  if(!name||!pages){alert('请填写书名和总页数哦，妮妮~');return;}
+  const books=getBooks();books.push({id:Date.now(),name,author,type,words,pages,rating,progress:0,notes:[]});
+  saveBooks(books);$('bookName').value='';$('bookAuthor').value='';$('bookPages').value='';$('bookWords').value='';$('bookRating').value='0';
+  renderBooks();
+}
+
+function updateProgress(id,pg){
+  const books=getBooks();const b=books.find(x=>x.id===id);if(!b)return;
+  b.progress=Math.min(pg,b.pages);saveBooks(books);renderBooks();
+}
+
+function updateRating(id,r){
+  const books=getBooks();const b=books.find(x=>x.id===id);if(!b)return;
+  b.rating=r;saveBooks(books);renderBooks();
+}
+
+function showStarPicker(id){
+  const books=getBooks();const b=books.find(x=>x.id===id);if(!b)return;
+  const cur=b.rating||0;
+  const opts=[{v:0,t:'清除评分'},{v:1,t:'⭐'},{v:2,t:'⭐⭐'},{v:3,t:'⭐⭐⭐'},{v:4,t:'⭐⭐⭐⭐'},{v:5,t:'⭐⭐⭐⭐⭐'}];
+  const choice=prompt('调整评分（输入1-5，0清除）：\n'+opts.map(o=>o.t).join('  '),cur||'');
+  if(choice===null)return;
+  const v=parseInt(choice);
+  if(v>=0&&v<=5)updateRating(id,v);
+}
+
+function addNote(id){
+  const txt=$('noteInput-'+id);if(!txt.value.trim())return;
+  const books=getBooks();const b=books.find(x=>x.id===id);if(!b)return;
+  b.notes.push({text:txt.value.trim(),time:new Date().toLocaleString('zh-CN')});saveBooks(books);
+  txt.value='';renderBooks();
+}
+
+function deleteBook(id){if(!confirm('确定删除这本书吗？笔记也会一起删除哦，妮妮'))return;saveBooks(getBooks().filter(x=>x.id!==id));renderBooks()}
+
+function renderBooks(){
+  const books=getBooks();const el=$('bookList');
+  if(!books.length){el.innerHTML='<div class="card"><p style="text-align:center;color:var(--text-light);padding:20px">还没有添加书籍哦，妮妮开始阅读吧~ 📚🌸</p></div>';return;}
+  el.innerHTML=books.map(b=>{
+    const pct=b.pages?Math.round(b.progress/b.pages*100):0;
+    const stars=b.rating||0;
+    const meta=[];
+    if(b.type)meta.push(b.type);
+    if(b.words)meta.push(b.words+'字');
+    meta.push('共'+b.pages+'页');
+    return `
+    <div class="card book-card">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div><h4>《${escHtml(b.name)}》</h4><div class="book-meta">${escHtml(b.author||'未知作者')} · ${meta.join(' · ')} · 进度 ${pct}%</div>
+        <div style="margin-top:6px;font-size:20px;cursor:pointer;letter-spacing:2px" onclick="event.stopPropagation();showStarPicker(${b.id})" title="点击调整评分">
+          ${[1,2,3,4,5].map(i=>`<span style="opacity:${i<=stars?1:.25}">⭐</span>`).join('')}
+        </div></div>
+        <span class="todo-del" onclick="deleteBook(${b.id})" style="font-size:20px">×</span>
+      </div>
+      <div class="book-progress">
+        <div class="book-progress-bar"><div class="book-progress-fill" style="width:${pct}%"></div></div>
+        <div class="book-page-input">
+          <label>当前页码：</label>
+          <input type="number" min="0" max="${b.pages}" value="${b.progress}" onchange="updateProgress(${b.id},this.value)">
+          <span>/ ${b.pages}</span>
+        </div>
+      </div>
+      <div class="note-area">
+        <h5>📝 读书笔记 (${b.notes.length})</h5>
+        ${b.notes.map(n=>`<div class="note-item">${escHtml(n.text)}<br><small style="color:var(--text-light)">${n.time}</small></div>`).join('')}
+        <div class="note-add">
+          <textarea id="noteInput-${b.id}" placeholder="记录印象深刻的文字..."></textarea>
+          <button class="btn btn-sm btn-primary" onclick="addNote(${b.id})">添加</button>
+        </div>
+      </div>
+    </div>`}).join('');
+}
+
+// ========== AI Assistant ==========
+function toggleAIPanel(){$('aiPanel').classList.toggle('show')}
+
+function processAI(){
+  const input=$('aiInput').value.trim();if(!input){alert('请输入描述内容哦，妮妮~');return;}
+  const res=$('aiResult');res.className='ai-result show';
+  let results=[];
+
+  // Expense detection
+  const expMatch=input.match(/花[了耗]?(\d+\.?\d*)\s*(元|块|￥|¥)?/);
+  if(expMatch){
+    const amt=parseFloat(expMatch[1]);
+    let cat='其他';
+    if(/午饭|晚餐|早饭|早餐|吃饭|外卖|食堂|餐厅|食物|奶茶|咖啡|饮料|水果|零食|买菜|超市/.test(input))cat='餐饮';
+    else if(/地铁|公交|打车|滴滴|出租车|油费|停车|共享单车|火车|飞机|高铁/.test(input))cat='交通';
+    else if(/淘宝|京东|网购|衣服|鞋|包|化妆品|护肤品/.test(input))cat='购物';
+    else if(/电影|游戏|KTV|唱歌|视频会员|直播|打赏/.test(input))cat='娱乐';
+    else if(/房租|水电|燃气|物业|网费|宽带|话费/.test(input))cat='住房';
+    else if(/药|医院|看病|体检|牙医|眼镜/.test(input))cat='医疗';
+    else if(/课|培训|学费|书|教材|考试|报名费/.test(input))cat='教育';
+    const exps=getExpenses();exps.push({id:Date.now(),cat,amt,desc:input,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
+    saveExpenses(exps);
+    results.push(`✅ 已记账：${cat} ¥${amt.toFixed(2)}`);
+  }
+
+  // Water detection
+  const waterMatch=input.match(/喝[了]?(\d)\s*[杯口]/);
+  if(waterMatch||/喝水|一杯水|第\d杯/.test(input)){
+    const c=getCheckins();if(!c.water)c.water=[];
+    let count=waterMatch?parseInt(waterMatch[1]):1;
+    for(let i=0;i<count&&c.water.length<8;i++){let j=0;while(c.water.includes(j))j++;c.water.push(j);}
+    saveCheckins(c);results.push(`✅ 已记录喝水 +${count} 杯`);
+  }
+
+  // Mood detection
+  if(/心情|感觉|情绪|今天.*好|今天.*不|开心|难过|高兴|郁闷|爽|累|烦|幸福|满足|激动|平静/.test(input)){
+    let mv=null,mw='自动识别',me='😐';
+    if(/开心|高兴|棒|爽|赞|好开心|超开心/.test(input)){mv=5;mw='开心';me='😄'}
+    else if(/幸福|满足|感动|温暖/.test(input)){mv=5;mw='幸福';me='🥰'}
+    else if(/还行|不错|可以|挺好|一般般/.test(input)){mv=4;mw='愉快';me='😊'}
+    else if(/平淡|正常|普通|没感觉|随便/.test(input)){mv=3;mw='平静';me='😐'}
+    else if(/累|疲惫|困|乏| tired/.test(input)){mv=2.5;mw='疲惫';me='😴'}
+    else if(/低落|郁闷|丧|不开心|难过|悲伤/.test(input)){mv=2;mw='低落';me='😔'}
+    else if(/烦|烦躁|生气|愤怒|火大/.test(input)){mv=1.5;mw='烦躁';me='😤'}
+    else if(/难过|伤心|哭|想哭/.test(input)){mv=1;mw='难过';me='😢'}
+    if(mv){
+      const moods=getMoods();moods[TODAY]={emoji:me,word:mw,value:mv,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
+      saveMoods(moods);results.push(`✅ 已记录心情：${me} ${mw}`);
+    }
+  }
+
+  // Todo detection
+  if(/要做|待办|记得|别忘了|提醒|计划|任务/.test(input)){
+    const todoMatch=input.match(/(?:要做|待办|记得|别忘了|提醒)[：:\s]*(.+)/);
+    const text=todoMatch?todoMatch[1].replace(/[。！？]+$/,''):input.replace(/^(我|要|记得|别忘了|提醒|帮|把)/g,'').replace(/^[：:\s]+/,'');
+    if(text.length>1&&text.length<100){
+      const todos=getTodos();todos.push({id:Date.now(),text:text.trim(),pri:'mid',cat:'生活办事',done:false});
+      saveTodos(todos);results.push(`✅ 已添加任务：${text.trim()}`);
+    }
+  }
+
+  // Book progress
+  const bookPageMatch=input.match(/读[了]?.*?(\d+)\s*(页|page)/i);
+  if(bookPageMatch){
+    const pg=parseInt(bookPageMatch[1]);
+    const books=getBooks();
+    if(books.length){
+      books[0].progress=Math.min(pg,books[0].pages);saveBooks(books);
+      results.push(`✅ 已更新《${books[0].name}》进度：${pg}/${books[0].pages}页`);
+    }else{results.push(`⚠️ 还没有添加书籍哦，妮妮请先在读书收获中添加`);}
+  }
+
+  if(!results.length)results.push('🤔 妮妮不太明白呢，试试更具体的描述：<br>• "花了30块吃午饭"<br>• "喝了第3杯水"<br>• "今天心情超棒"<br>• "记得买牛奶"');
+  res.innerHTML=results.join('<br>');
+  // Refresh relevant modules
+  renderTodos();renderCheckins();renderExpenses();renderMoodHistory();renderMoodChart();renderBooks();
+  $('aiInput').value='';
+}
+
+// ========== Data Export/Import ==========
+function exportData(){
+  const data={
+    version:'1.0',exportTime:new Date().toISOString(),
+    todos:getData('todos'),checkins:getData('checkins'),
+    expenses:getData('expenses'),moods:getData('moods'),books:getData('books')
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`樱田妮妮工作台_${TODAY}.json`;a.click();URL.revokeObjectURL(a.href);
+}
+
+function importData(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.todos)setData('todos',data.todos);
+      if(data.checkins)setData('checkins',data.checkins);
+      if(data.expenses)setData('expenses',data.expenses);
+      if(data.moods)setData('moods',data.moods);
+      if(data.books)setData('books',data.books);
+      alert('导入成功！正在为妮妮加载...');location.reload();
+    }catch(err){alert('导入失败：文件格式不正确哦，妮妮');}
+  };
+  reader.readAsText(file);
+}
+
+// ========== Helpers ==========
+function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// ========== Init ==========
+document.addEventListener('DOMContentLoaded', function(){
+  // Auto-collapse all cards
+  document.querySelectorAll('.card').forEach(card=>{
+    if(card.querySelector('.card-body'))return; // already wrapped
+    const title=card.querySelector(':scope > .card-title');
+    if(!title||title.querySelector('.fs-arrow')||title.querySelector('#wbArrow'))return; // skip scene/wordbook custom folds
+    const body=document.createElement('div');body.className='card-body';
+    while(title.nextSibling)body.appendChild(title.nextSibling);
+    card.appendChild(body);
+    title.innerHTML+=' <span class="fs-arrow">▾</span>';
+    title.onclick=function(){
+      body.classList.toggle('hidden');
+      this.querySelector('.fs-arrow').textContent=body.classList.contains('hidden')?'▸':'▾';
+    };
+  });
+  if(getData('engcheckins')===null)setData('engcheckins',{});
+  if(getData('think_courses')===null)setData('think_courses',{});
+  if(getData('scene_checkins')===null)setData('scene_checkins',{});
+  if(getData('scene_data')===null)setData('scene_data',[]);
+  if(getData('life_scene_data')===null)setData('life_scene_data',[]);
+  if(getData('life_scene_checkins')===null)setData('life_scene_checkins',{});
+  renderTodos();renderCheckins();renderCatTags();renderExpenses();renderMoodOptions();renderMoodHistory();renderMoodChart();renderBooks();renderTodoSummary();renderEngRead();renderEngScene();renderSceneList();renderLifeSceneList();renderLifeSceneCk();renderThinkCourses();
+});
+</script>
+</body>
+</html>
