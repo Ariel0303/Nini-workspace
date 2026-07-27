@@ -194,6 +194,18 @@ textarea{resize:vertical;min-height:70px}
 /* Data management */
 .data-actions{display:flex;gap:10px;margin-top:20px;padding:16px;background:var(--cream);border-radius:var(--radius);border:2px dashed var(--pink)}
 
+/* Yarn Records */
+.yarn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.yarn-card{background:var(--card);border-radius:var(--radius);overflow:hidden;border:2px solid var(--border);box-shadow:var(--shadow);transition:.25s;position:relative}
+.yarn-card:hover{transform:translateY(-4px);box-shadow:0 8px 28px rgba(244,143,177,.18)}
+.yarn-img{width:100%;height:220px;object-fit:cover;background:var(--cream)}
+.yarn-body{padding:16px}
+.yarn-name{font-size:16px;font-weight:800;color:var(--rose);margin-bottom:6px}
+.yarn-desc{font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.yarn-meta{font-size:12px;color:var(--text-light);margin-top:10px;display:flex;justify-content:space-between;align-items:center}
+.yarn-del{cursor:pointer;color:var(--rose);font-size:20px;opacity:.5;transition:.2s}
+.yarn-del:hover{opacity:1}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--pink);border-radius:3px}
 
@@ -226,6 +238,10 @@ textarea{resize:vertical;min-height:70px}
   .data-actions{display:none!important}
   .ai-float{display:none}
   .checkin-btn{font-size:12px;padding:10px 8px}
+  .yarn-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .yarn-img{height:140px}
+  .yarn-body{padding:10px}
+  .yarn-name{font-size:14px}
 }
 </style>
 </head>
@@ -243,6 +259,7 @@ textarea{resize:vertical;min-height:70px}
   <div class="nav-item" data-page="mood" onclick="switchPage('mood')"><span class="nav-icon">💗</span><span>心情日记</span></div>
   <div class="nav-item" data-page="books" onclick="switchPage('books')"><span class="nav-icon">📚</span><span>读书收获</span></div>
   <div class="nav-item" data-page="english" onclick="switchPage('english')"><span class="nav-icon">✏️</span><span>英语学习</span></div>
+  <div class="nav-item" data-page="yarn" onclick="switchPage('yarn')"><span class="nav-icon">🧶</span><span>毛毛记录</span></div>
   <div style="flex:1"></div>
   <div class="data-actions" style="flex-direction:column;gap:8px;padding:12px;background:rgba(255,255,255,.12);border-radius:12px;border:2px dashed rgba(255,255,255,.25)">
     <button class="btn btn-sm btn-primary" style="width:100%;justify-content:center;background:var(--sakura);color:var(--rose)" onclick="exportData()">📤 导出数据</button>
@@ -484,6 +501,30 @@ textarea{resize:vertical;min-height:70px}
   <div class="card" style="background:linear-gradient(135deg,#FFF8E7,#FFF3E0);border:2px solid #FFCC80;border-left:6px solid #FF9800;box-shadow:0 4px 20px rgba(255,152,0,.12)">
     <div class="card-title" style="color:#E65100;cursor:pointer" onclick="toggleWordbook()">📖 英语学习宝典 <span id="wbArrow" style="font-size:14px">▸</span></div>
     <div id="wordbook" style="display:none;padding-top:8px"></div>
+  </div>
+</div>
+
+<!-- Yarn Records Page -->
+<div class="page" id="page-yarn">
+  <div class="page-header">
+    <div><h2>🧶 毛毛记录</h2><p>记录每一件手作温度 ✨</p></div>
+  </div>
+  <div class="card">
+    <div class="card-title">➕ 添加新作品</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label style="display:block;font-size:13px;color:var(--text-light);margin-bottom:6px">作品照片</label>
+        <input type="file" id="yarnImage" accept="image/*" style="padding:8px 0;font-size:13px">
+        <p style="font-size:12px;color:var(--text-light);margin-top:4px">图片会自动压缩，建议上传 2MB 以内照片</p>
+      </div>
+      <input type="text" id="yarnName" placeholder="给作品取个名字...">
+      <textarea id="yarnDesc" placeholder="记录用到的线材、钩针号、心得..." style="min-height:80px"></textarea>
+      <button class="btn btn-primary" onclick="addYarn()" style="align-self:flex-start">🧶 添加作品</button>
+    </div>
+  </div>
+  <div id="yarnList" class="yarn-grid"></div>
+  <div id="yarnEmpty" class="card" style="display:none">
+    <p style="text-align:center;color:var(--text-light);padding:30px">还没有毛毛作品哦，添加第一件吧～ 🧶🐶</p>
   </div>
 </div>
 
@@ -1345,6 +1386,75 @@ function renderCalendar(type){
   cal.innerHTML=html;
 }
 
+// ========== MODULE: Yarn Records ==========
+function getYarns(){
+  const d=getData('yarns');
+  if(!d||!Array.isArray(d)){if(d)setData('yarns',[]);return [];}
+  return d;
+}
+function saveYarns(y){setData('yarns',y)}
+
+function compressImage(file,maxW,maxH,quality){
+  return new Promise(function(resolve){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      const img=new Image();
+      img.onload=function(){
+        let w=img.width,h=img.height;
+        if(w>maxW||h>maxH){
+          const scale=Math.min(maxW/w,maxH/h);
+          w=Math.round(w*scale);h=Math.round(h*scale);
+        }
+        const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+        const ctx=canvas.getContext('2d');ctx.fillStyle='#FFF';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function addYarn(){
+  const name=$('yarnName').value.trim(),desc=$('yarnDesc').value.trim();
+  const fileInput=$('yarnImage'),file=fileInput.files[0];
+  if(!name){alert('请填写作品名字哦～');return;}
+  let img='';
+  if(file){
+    if(file.size>10*1024*1024){alert('图片太大啦，请选择 10MB 以内的照片');return;}
+    img=await compressImage(file,800,800,0.75);
+  }
+  const yarns=getYarns();
+  yarns.unshift({id:Date.now(),name,desc,image:img,date:TODAY});
+  saveYarns(yarns);
+  $('yarnName').value='';$('yarnDesc').value='';fileInput.value='';
+  renderYarns();
+}
+
+function deleteYarn(id){
+  if(!confirm('确定删除这个毛毛作品吗？'))return;
+  saveYarns(getYarns().filter(y=>y.id!==id));renderYarns();
+}
+
+function renderYarns(){
+  const yarns=getYarns(),list=$('yarnList'),empty=$('yarnEmpty');
+  if(!yarns.length){list.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  list.innerHTML=yarns.map(y=>`
+    <div class="yarn-card">
+      ${y.image?`<img src="${y.image}" class="yarn-img" alt="${escHtml(y.name)}">`:''}
+      <div class="yarn-body">
+        <div class="yarn-name">${escHtml(y.name)}</div>
+        ${y.desc?`<div class="yarn-desc">${escHtml(y.desc)}</div>`:''}
+        <div class="yarn-meta">
+          <span>${y.date||''}</span>
+          <span class="yarn-del" onclick="deleteYarn(${y.id})" title="删除">×</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
 // ========== Helpers ==========
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
@@ -1379,8 +1489,9 @@ document.addEventListener('DOMContentLoaded', function(){
   if(getData('scene_data')===null)setData('scene_data',[]);
   if(getData('life_scene_data')===null)setData('life_scene_data',[]);
   if(getData('life_scene_checkins')===null)setData('life_scene_checkins',{});
+  if(getData('yarns')===null)setData('yarns',[]);
   // Safe init renders
-  const inits=[()=>{renderTodos()},()=>{renderCheckins()},()=>{renderCatTags()},()=>{renderExpenses()},()=>{renderMoodOptions()},()=>{renderMoodHistory()},()=>{renderMoodChart()},()=>{renderBooks()},()=>{renderTodoSummary()},()=>{renderEngRead()},()=>{renderEngScene()},()=>{renderSceneList()},()=>{renderLifeSceneList()},()=>{renderLifeSceneCk()},()=>{renderThinkCourses()}];
+  const inits=[()=>{renderTodos()},()=>{renderCheckins()},()=>{renderCatTags()},()=>{renderExpenses()},()=>{renderMoodOptions()},()=>{renderMoodHistory()},()=>{renderMoodChart()},()=>{renderBooks()},()=>{renderTodoSummary()},()=>{renderEngRead()},()=>{renderEngScene()},()=>{renderSceneList()},()=>{renderLifeSceneList()},()=>{renderLifeSceneCk()},()=>{renderThinkCourses()},()=>{renderYarns()}];
   inits.forEach(fn=>{try{fn()}catch(e){console.error('Init error:',e)}});
 });
 </script>
