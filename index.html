@@ -527,15 +527,16 @@ function gt(){return localStorage.getItem('gitee_token')}
 async function pushCloud(){
   var tk=gt();if(!tk){alert('请先设置 Token');return;}
   try{var a={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k!=='gitee_token')try{a[k]=JSON.parse(localStorage.getItem(k))}catch(x){a[k]=localStorage.getItem(k)}}
-  var c=btoa(unescape(encodeURIComponent(JSON.stringify(a)))),body={content:c,message:'manual'};if(_sha)body.sha=_sha;
-  var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(r.ok){var d=await r.json();_sha=d.content.sha;showMsg('推送成功')}else{var txt=await r.text();showMsg('推送失败 '+r.status);console.error('PUSH FAIL',r.status,txt);}
+  var json=JSON.stringify(a),c=btoa(unescape(encodeURIComponent(json))),body={access_token:tk,content:c,message:'manual'};if(_sha)body.sha=_sha;
+  console.log('PUSH body size:',json.length,'sha:',_sha);
+  var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json',{method:'PUT',headers:{'Content-Type':'application/json;charset=UTF-8'},body:JSON.stringify(body)});
+  if(r.ok){var d=await r.json();_sha=d.content.sha;showMsg('推送成功')}else{var txt=await r.text();showMsg('推送失败 '+r.status+' '+txt.slice(0,120));console.error('PUSH FAIL',r.status,txt);}
   }catch(e){showMsg('推送失败 '+e.message);console.error('PUSH ERROR',e)}
 }
 async function pullCloud(){
   var tk=gt();if(!tk){alert('请先设置 Token');return;}
   if(!confirm('云端数据将覆盖本地，确定？'))return;
-  try{var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk);if(!r.ok){var txt=await r.text();showMsg('云端无数据 '+r.status);console.error('PULL FAIL',r.status,txt);return}
+  try{var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk);if(!r.ok){var txt=await r.text();showMsg('云端无数据 '+r.status+' '+txt.slice(0,120));console.error('PULL FAIL',r.status,txt);return}
   var d=await r.json();_sha=d.sha;var a=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\s/g,'')))));
   for(var k in a)localStorage.setItem(k,JSON.stringify(a[k]));showMsg('加载成功');location.reload()}catch(e){showMsg('加载失败 '+e.message);console.error('PULL ERROR',e)}
 }
