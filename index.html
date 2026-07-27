@@ -224,6 +224,7 @@ textarea{resize:vertical;min-height:70px}
 </style>
 </head>
 <body>
+<div id="errorBox" style="display:none;position:fixed;top:0;left:0;right:0;background:#C62828;color:#fff;padding:12px 20px;font-size:14px;z-index:99999;font-weight:bold;word-break:break-all"></div>
 <!-- Sidebar -->
 <aside class="sidebar">
   <div class="sidebar-logo">
@@ -274,7 +275,7 @@ textarea{resize:vertical;min-height:70px}
       <input type="text" id="todoText" placeholder="输入待办事项...">
       <select id="todoPriority"><option value="high">🔴 高优先</option><option value="mid" selected>🟡 中优先</option><option value="low">🟢 低优先</option></select>
       <select id="todoCategory"><option value="生活办事">🏠 生活办事</option><option value="学习" selected>📖 学习</option><option value="工作">💼 工作</option><option value="娱乐">🎮 娱乐</option><option value="手工">✂️ 手工</option></select>
-      <button class="btn btn-primary" onclick="addTodo()">添加</button>
+      <button class="btn btn-primary" onclick="try{addTodo()}catch(e){showError('添加任务失败: '+e.message)}">添加</button>
     </div>
   </div>
   <div class="card">
@@ -508,6 +509,17 @@ let expenseChart = null, moodChart = null, todoSummaryChart = null;
 function $(id){return document.getElementById(id)}
 function getData(key){try{return JSON.parse(localStorage.getItem(key)||'null')}catch(e){return null}}
 function setData(key,val){localStorage.setItem(key,JSON.stringify(val))}
+
+// Global error display
+function showError(msg){
+  const box=$('errorBox');
+  if(box){box.textContent='🔴 '+msg;box.style.display='block';setTimeout(()=>{box.style.display='none'},8000);}
+  else{alert('错误: '+msg);}
+}
+window.onerror=function(msg,src,line,col,err){
+  showError('JS错误: '+msg+' (行'+line+')');
+  console.error('GLOBAL ERROR:',msg,'at',src,line,col,err);
+};
 
 // ===== Cloud Sync (手动) =====
 var _sha=null;
