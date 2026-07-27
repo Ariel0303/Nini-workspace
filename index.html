@@ -479,19 +479,19 @@ function $(id){return document.getElementById(id)}
 function getData(key){try{return JSON.parse(localStorage.getItem(key)||'null')}catch(e){return null}}
 function setData(key,val){localStorage.setItem(key,JSON.stringify(val));scheduleSync()}
 
-// ===== Cloud Sync =====
+// ===== Cloud Sync (Gitee) =====
 var _sha=null,_d=!1,_tmr=null;
 function scheduleSync(){_d=!0;clearTimeout(_tmr);_tmr=setTimeout(syncGH,600)}
-function t(){return localStorage.getItem('gh_token')}
+function t(){return localStorage.getItem('gitee_token')}
 async function loadGH(){
   var tk=t();if(!tk)return;
-  try{var r=await fetch('https://api.github.com/repos/Ariel0303/Nini-workspace/contents/data.json',{headers:{Authorization:'token '+tk}});if(!r.ok)return;var d=await r.json();_sha=d.sha;var a=JSON.parse(atob(d.content.replace(/\s/g,'')));for(var k in a)localStorage.setItem(k,JSON.stringify(a[k]));}catch(e){}
+  try{var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk);if(!r.ok)return;var d=await r.json();_sha=d.sha;var a=JSON.parse(atob(d.content.replace(/\s/g,'')));for(var k in a)localStorage.setItem(k,JSON.stringify(a[k]));}catch(e){}
 }
 async function syncGH(){
   if(!_d)return;_d=!1;var tk=t();if(!tk)return;
-  try{var a={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k!=='gh_token'&&k!=='debug')try{a[k]=JSON.parse(localStorage.getItem(k))}catch(x){a[k]=localStorage.getItem(k)}}
-  var c=btoa(unescape(encodeURIComponent(JSON.stringify(a)))),body={message:'sync',content:c};if(_sha)body.sha=_sha;
-  var r=await fetch('https://api.github.com/repos/Ariel0303/Nini-workspace/contents/data.json',{method:'PUT',headers:{Authorization:'token '+tk,'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok){var d=await r.json();_sha=d.content.sha;}}catch(e){_d=!0}
+  try{var a={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k!=='gitee_token'&&k!=='gh_token')try{a[k]=JSON.parse(localStorage.getItem(k))}catch(x){a[k]=localStorage.getItem(k)}}
+  var c=btoa(unescape(encodeURIComponent(JSON.stringify(a)))),body={access_token:tk,content:c,message:'sync'};if(_sha)body.sha=_sha;
+  var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok){var d=await r.json();_sha=d.content.sha;}}catch(e){_d=!0}
 }
 
 function initKey(key,def){if(getData(key)===null)setData(key,def)}
@@ -1283,7 +1283,7 @@ function escHtml(s){const d=document.createElement('div');d.textContent=s;return
 
 // ========== Init ==========
 document.addEventListener('DOMContentLoaded', async function(){
-  if(!t()){var tk=prompt('首次使用请输入 GitHub Token：\ngithub.com/settings/tokens → 勾选 repo');if(tk)localStorage.setItem('gh_token',tk.trim());}
+  if(!t()){var tk=prompt('请输入 Gitee Token：\ngitee.com → 设置 → 私人令牌 → 勾选 projects');if(tk)localStorage.setItem('gitee_token',tk.trim());}
   await loadGH();
   // Auto-collapse all cards
   document.querySelectorAll('.card').forEach(card=>{
