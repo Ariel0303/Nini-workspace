@@ -225,7 +225,10 @@ textarea{resize:vertical;min-height:70px}
 </head>
 <body>
 <div style="text-align:center;background:#FFF3E0;padding:6px;font-size:12px;color:#E65100">
-  <button onclick="localStorage.clear();location.reload()" style="background:#EF5350;color:#fff;border:none;padding:4px 16px;border-radius:6px;font-size:12px;cursor:pointer">清除本地缓存</button>
+  <button onclick="localStorage.clear();location.reload()" style="background:#EF5350;color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;margin:0 2px">清除缓存</button>
+  <button onclick="setToken()" style="background:#4CAF50;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;margin:0 2px">🔑 Token</button>
+  <button onclick="pushCloud()" style="background:#2196F3;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;margin:0 2px">📤 推送</button>
+  <button onclick="pullCloud()" style="background:#FF9800;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;margin:0 2px">📥 加载</button>
 </div>
 
 <!-- Sidebar -->
@@ -244,7 +247,10 @@ textarea{resize:vertical;min-height:70px}
   <div class="data-actions" style="flex-direction:column;gap:8px;padding:12px;background:rgba(255,255,255,.12);border-radius:12px;border:2px dashed rgba(255,255,255,.25)">
     <button class="btn btn-sm btn-primary" style="width:100%;justify-content:center;background:var(--sakura);color:var(--rose)" onclick="exportData()">📤 导出数据</button>
     <button class="btn btn-sm btn-outline" style="width:100%;justify-content:center;border-color:#fff;color:#fff;background:transparent" onclick="document.getElementById('importInput').click()">📥 导入备份</button>
-    <button class="btn btn-sm" style="width:100%;justify-content:center;background:#fff;color:var(--rose);font-weight:700" onclick="_d=!0;syncGH()">☁️ 同步云端</button>
+    <button class="btn btn-sm" style="width:100%;justify-content:center;background:#fff;color:var(--rose);font-weight:700" onclick="setToken()" style="margin-bottom:4px">🔑 设置Token</button>
+    <button class="btn btn-sm" style="width:100%;justify-content:center;background:#fff;color:var(--rose);font-weight:700' onclick="pushCloud()" style="margin-bottom:4px">📤 推送云端</button>
+    <button class="btn btn-sm" style="width:100%;justify-content:center;background:#fff;color:var(--rose);font-weight:700' onclick="pullCloud()">📥 加载云端</button>
+    <button class="btn btn-sm" style="width:100%;justify-content:center;background:#fff;color:var(--rose);font-weight:700</button>
     <input type="file" id="importInput" accept=".json" style="display:none" onchange="importData(event)">
   </div>
 </aside>
@@ -504,261 +510,26 @@ function $(id){return document.getElementById(id)}
 function getData(key){try{return JSON.parse(localStorage.getItem(key)||'null')}catch(e){return null}}
 function setData(key,val){localStorage.setItem(key,JSON.stringify(val));scheduleSync()}
 
-// ===== Cloud Sync (暂时禁用自动加载) =====
-var _sha=null,_d=!1,_tmr=null,_cloudReady=!1;
-function scheduleSync(){if(!_cloudReady)return;_d=!0;clearTimeout(_tmr);_tmr=setTimeout(syncGH,600)}
-function t(){return localStorage.getItem('gitee_token')}
-async function loadGH(){
-  // Don't load from cloud - local is always authority
-  return;
-  var tk=t();if(!tk)return;
-  try{var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk);if(!r.ok)return;var d=await r.json();_sha=d.sha;var a=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\s/g,'')))));for(var k in a)localStorage.setItem(k,JSON.stringify(a[k]));}catch(e){}
-}
-async function syncGH(){
-  if(!_d)return;_d=!1;var tk=t();if(!tk)return;
+// ===== Cloud Sync (手动) =====
+var _sha=null;
+function gt(){return localStorage.getItem('gitee_token')}
+async function pushCloud(){
+  var tk=gt();if(!tk){alert('请先设置 Token');return;}
   try{var a={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k!=='gitee_token')try{a[k]=JSON.parse(localStorage.getItem(k))}catch(x){a[k]=localStorage.getItem(k)}}
-  var c=btoa(unescape(encodeURIComponent(JSON.stringify(a)))),body={content:c,message:'sync'};if(_sha)body.sha=_sha;
+  var c=btoa(unescape(encodeURIComponent(JSON.stringify(a)))),body={content:c,message:'manual'};if(_sha)body.sha=_sha;
   var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(r.ok){var d=await r.json();_sha=d.content.sha;showSyncStatus('☁️ 已同步',3)}
-  else showSyncStatus('⚠️ 同步失败',3);
-  }catch(e){_d=!0;showSyncStatus('⚠️ 同步失败',3)}
+  if(r.ok){var d=await r.json();_sha=d.content.sha;showMsg('推送成功')}else showMsg('推送失败')
+  }catch(e){showMsg('推送失败')}
 }
-
-function showSyncStatus(msg,sec){
-  var s=$('syncStatus')||(function(){var d=document.createElement('div');d.id='syncStatus';d.style.cssText='position:fixed;bottom:70px;right:16px;background:rgba(0,0,0,.75);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;z-index:999;transition:opacity .3s;pointer-events:none';document.body.appendChild(d);return d})();
-  s.textContent=msg;s.style.opacity='1';clearTimeout(s._t);s._t=setTimeout(function(){s.style.opacity='0'},sec*1000);
+async function pullCloud(){
+  var tk=gt();if(!tk){alert('请先设置 Token');return;}
+  if(!confirm('云端数据将覆盖本地，确定？'))return;
+  try{var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk);if(!r.ok){showMsg('云端无数据');return}
+  var d=await r.json();_sha=d.sha;var a=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\s/g,'')))));
+  for(var k in a)localStorage.setItem(k,JSON.stringify(a[k]));showMsg('加载成功');location.reload()}catch(e){showMsg('加载失败')}
 }
-
-function initKey(key,def){if(getData(key)===null)setData(key,def)}
-
-// Initialize all keys
-['todos','checkins','expenses','moods','books'].forEach(k=>{
-  if(k==='todos')initKey(k,{});
-  else if(k==='checkins')initKey(k,{});
-  else if(k==='expenses')initKey(k,{});
-  else if(k==='moods')initKey(k,{});
-  else if(k==='books')initKey(k,[]);
-});
-
-// ========== Page Switch ==========
-function switchPage(name){
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
-
-  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
-  if(name==='expense'){renderExpenseChart();}
-  if(name==='mood'){renderMoodChart();renderMoodHistory();}
-  if(name==='plan'){renderTodoSummary();}
-  if(name==='english'){renderEngRead();renderEngScene();renderSceneList();renderLifeSceneList();}
-}
-
-// ========== Date Display ==========
-$('todayDatePlan').textContent = formatDate();
-$('todayDateCheckin').textContent = formatDate();
-$('todayDateExpense').textContent = formatDate();
-$('todayDateMood').textContent = formatDate();
-function formatDate(){
-  const d=new Date(),ws=['日','一','二','三','四','五','六'];
-  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 星期${ws[d.getDay()]}`;
-}
-
-// ========== MODULE 1: Todos ==========
-function getTodos(){return getData('todos')[TODAY]||[]}
-function saveTodos(t){let all=getData('todos');all[TODAY]=t;setData('todos',all)}
-
-function addTodo(){
-  const text=$('todoText').value.trim();if(!text)return;
-  const pri=$('todoPriority').value,cat=$('todoCategory').value;
-  const todos=getTodos();todos.push({id:Date.now(),text,pri,cat,done:false});
-  saveTodos(todos);$('todoText').value='';renderTodos();
-}
-
-function toggleTodo(id){
-  const todos=getTodos();const t=todos.find(x=>x.id===id);if(t)t.done=!t.done;
-  saveTodos(todos);renderTodos();
-}
-
-function delTodo(id){saveTodos(getTodos().filter(x=>x.id!==id));renderTodos()}
-
-function renderTodos(){
-  const todos=getTodos();const list=$('todoList');
-  const done=todos.filter(x=>x.done),delay=todos.filter(x=>!x.done);
-  const total=todos.length;
-  $('planTotal').textContent=total;$('planDone').textContent=done.length;
-  $('planDelay').textContent=delay.length;
-  const rate=total?Math.round(done.length/total*100):0;
-  $('planRate').textContent=rate+'%';$('planProgressBar').style.width=rate+'%';
-  if(!total){list.innerHTML='<p style="text-align:center;color:var(--text-light);padding:20px">暂无任务哦，妮妮快去添加一个吧~ 🌸</p>';$('delayCard').style.display='none';return;}
-  list.innerHTML=todos.map(t=>`
-    <div class="todo-item ${t.done?'done':''}">
-      <div class="todo-check ${t.done?'checked':''}" onclick="toggleTodo(${t.id})">${t.done?'✓':''}</div>
-      <span class="priority-tag p${t.pri}">${t.pri==='high'?'高':t.pri==='mid'?'中':'低'}</span>
-      <span class="cat-todo cat-${catClass(t.cat)}">${catLabel(t.cat)}</span>
-      <span class="todo-text">${escHtml(t.text)}</span>
-      <span class="todo-del" onclick="delTodo(${t.id})">×</span>
-    </div>`).join('');
-  // 延期任务区域
-  const delayCard=$('delayCard'),delayList=$('delayList');
-  if(delay.length){
-    delayCard.style.display='block';
-    delayList.innerHTML=delay.map(t=>`
-      <div class="todo-item" style="border-left-color:${t.pri==='high'?'var(--high)':t.pri==='mid'?'var(--mid)':'var(--low)'}">
-        <div class="todo-check" onclick="toggleTodo(${t.id})"></div>
-        <span class="priority-tag p${t.pri}">${t.pri==='high'?'高':t.pri==='mid'?'中':'低'}</span>
-        <span class="cat-todo cat-${catClass(t.cat)}">${catLabel(t.cat)}</span>
-        <span class="todo-text">${escHtml(t.text)}</span>
-        <span class="todo-del" onclick="delTodo(${t.id})">×</span>
-      </div>`).join('');
-  }else{
-    delayCard.style.display='none';
-  }
-  renderTodoSummary();
-}
-function catClass(c){return ({'生活办事':'life','学习':'study','工作':'work','娱乐':'fun','手工':'hand'})[c]||'life'}
-function catLabel(c){return ({'生活办事':'🏠 生活','学习':'📖 学习','工作':'💼 工作','娱乐':'🎮 娱乐','手工':'✂️ 手工'})[c]||c}
-
-function renderTodoSummary(){
-  const allTodos=getData('todos');
-  const now=new Date(),ym=now.getFullYear()+'-'+(now.getMonth()+1);
-  const byCat={};
-  let totalMonth=0;
-  Object.keys(allTodos).forEach(day=>{
-    if(day.startsWith(ym.substring(0,4)+'-')&&parseInt(day.split('-')[1])===now.getMonth()+1){
-      allTodos[day].forEach(t=>{
-        const c=t.cat||'生活办事';
-        byCat[c]=(byCat[c]||0)+1;totalMonth++;
-      });
-    }
-  });
-  const cats=['学习','工作','生活办事','娱乐','手工'];
-  const labels=cats.filter(c=>byCat[c]);
-  const data=labels.map(c=>byCat[c]||0);
-  const catColors={'学习':'#3F51B5','工作':'#00897B','生活办事':'#E91E63','娱乐':'#FFA726','手工':'#8E24AA'};
-  if(todoSummaryChart)todoSummaryChart.destroy();
-  const ctx=$('todoSummaryChart').getContext('2d');
-  if(!totalMonth){
-    ctx.clearRect(0,0,$('todoSummaryChart').width,$('todoSummaryChart').height);
-    $('todoSummaryText').textContent='本月还没有任务记录哦，妮妮加油~';
-    return;
-  }
-  $('todoSummaryText').textContent=`本月共 ${totalMonth} 个任务`;
-  todoSummaryChart=new Chart(ctx,{
-    type:'doughnut',
-    data:{labels,datasets:[{data,backgroundColor:labels.map(c=>catColors[c]),borderWidth:3,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{padding:14,usePointStyle:true,pointStyleWidth:10,font:{size:13}}}}}
-  });
-}
-
-// ========== MODULE 2: Checkin ==========
-function getCheckins(){return getData('checkins')[TODAY]||{}}
-function saveCheckins(c){let all=getData('checkins');all[TODAY]=c;setData('checkins',all)}
-
-function setCheckinStatus(type,status){
-  try{
-    var c=getCheckins();
-    if(typeof c[type]!=='object'||!c[type])c[type]={};
-    c[type].status=c[type].status===status?null:status;
-    var te=$('time-'+type);if(te&&te.value.trim())c[type].time=te.value.trim();
-    saveCheckins(c);renderCheckins();
-  }catch(e){alert('出错：'+e.message)}
-}
-
-function toggleWaterCup(idx){
-  const c=getCheckins();if(!c.water)c.water=[];
-  const i=c.water.indexOf(idx);if(i>-1)c.water.splice(i,1);else c.water.push(idx);
-  saveCheckins(c);renderWaterCups();
-}
-
-function renderCheckins(){
-  try{
-  var c=getCheckins(),sd=c.sleep||{},sw=c.wake||{};
-  var sg=$('btn-sleep-good'),sb=$('btn-sleep-bad'),wg=$('btn-wake-good'),wb=$('btn-wake-bad');
-  if(sg){sg.className='checkin-btn '+(sd.status==='good'?'checked':'unchecked')}
-  if(sb){sb.className='checkin-btn'+(sd.status==='bad'?' checked':' unchecked');sb.style.background=sd.status==='bad'?'#FFCDD2':'';sb.style.color=sd.status==='bad'?'#C62828':''}
-  if(wg){wg.className='checkin-btn '+(sw.status==='good'?'checked':'unchecked')}
-  if(wb){wb.className='checkin-btn'+(sw.status==='bad'?' checked':' unchecked');wb.style.background=sw.status==='bad'?'#FFCDD2':'';wb.style.color=sw.status==='bad'?'#C62828':''}
-  var ts=$('time-sleep'),tw=$('time-wake');
-  if(ts)ts.value=sd.time||'';
-  if(tw)tw.value=sw.time||'';
-  var cs=$('ci-sleep'),cw=$('ci-wake');
-  if(cs)cs.className='checkin-card'+(sd.status?' done':'');
-  if(cw)cw.className='checkin-card'+(sw.status?' done':'');
-  renderWaterCups();
-  ['sleep','wake','water'].forEach(function(t){var el=$('cal-'+t);if(el&&el.classList.contains('show'))renderCalendar(t)});
-  }catch(e){}
-}
-
-function renderWaterCups(){
-  const c=getCheckins();const w=c.water||[];
-  let html='';
-  for(let i=0;i<8;i++){
-    const checked=w.includes(i);
-    html+=`<div onclick="toggleWaterCup(${i})" style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:.2s;border:2px solid ${checked?'#81C784':'var(--pink)'};background:${checked?'#E8F5E9':'#fff'}">${checked?'💧':'🥤'}</div>`;
-  }
-  $('waterCups').innerHTML=html;
-  $('waterCount').textContent=`已喝 ${w.length} / 8 杯`;
-  if(w.length>=8)$('ci-water').classList.add('done');else $('ci-water').classList.remove('done');
-}
-
-// ========== Checkin Calendar ==========
-function toggleCalendar(type){
-  const el=$('cal-'+type);
-  const toggle=el.parentElement.querySelector('.checkin-cal-toggle');
-  const isOpen=el.classList.contains('show');
-  el.classList.toggle('show');
-  toggle.innerHTML='📅 本月打卡记录 '+(isOpen?'▸':'▾');
-  if(!isOpen)renderCalendar(type);
-}
-
-function renderCalendar(type){
-  const el=$('cal-'+type);if(!el.classList.contains('show'))return;
-  const allCheckins=type==='engread'?getData('engcheckins'):type==='engscene'?getData('scene_checkins'):type==='lifescene'?getData('life_scene_checkins'):getData('checkins');
-  const now=new Date(),year=now.getFullYear(),month=now.getMonth();
-  const daysInMonth=new Date(year,month+1,0).getDate();
-  const firstDay=(new Date(year,month,1).getDay()+6)%7;
-  const today=now.getDate();
-  let checkedDays=0;
-  let cells='';
-  for(let i=0;i<firstDay;i++)cells+='<div class="cal-day empty"></div>';
-  for(let d=1;d<=daysInMonth;d++){
-    const key=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const data=allCheckins?allCheckins[key]||{}:{};
-    let checked=false;
-    if(type==='engread'||type==='engscene'||type==='lifescene'){
-      const nw=!!data.new,rv=!!data.review;
-      if(nw&&rv){checked=true;cls='cal-day both'}
-      else if(nw){checked=true;cls='cal-day new-only'}
-      else if(rv){checked=true;cls='cal-day review-only'}
-      else cls='cal-day missed';
-    }
-    else if(type==='sleep'||type==='wake'){
-      const sd=data[type]&&typeof data[type]==='object'?data[type]:{};
-      if(sd.status==='good'){checked=true;cls='cal-day checked';}
-      else if(sd.status==='bad'){checked=true;cls='cal-day missed';}
-      else cls='cal-day missed';
-      if(sd.time)cls+=' cal-timed';else cls+=' cal-plain';
-    }
-    else if(type==='water'){const w=data.water||[];checked=w.length>=8;cls='cal-day'+(checked?' checked':' missed');}
-    else{checked=false;cls='cal-day missed';}
-    if(checked)checkedDays++;
-    if(d===today)cls+=' today';
-    const display=type==='sleep'||type==='wake'?(data[type]&&data[type].time||d):d;
-    cells+=`<div class="${cls}">${display}</div>`;
-  }
-  el.innerHTML=`
-    <div class="cal-month-label">${year}年${month+1}月</div>
-    <div class="cal-grid">
-      <div class="cal-day-head">一</div><div class="cal-day-head">二</div><div class="cal-day-head">三</div>
-      <div class="cal-day-head">四</div><div class="cal-day-head">五</div><div class="cal-day-head">六</div><div class="cal-day-head">日</div>
-      ${cells}
-    </div>
-    <div class="cal-summary">本月已打卡 <b>${checkedDays}</b> / ${daysInMonth} 天</div>
-    ${(type==='engread'||type==='engscene'||type==='lifescene')?`<div style="display:flex;gap:10px;justify-content:center;margin-top:6px;font-size:11px;color:var(--text-light);flex-wrap:wrap">
-      <span>🟢 新学习</span><span>🟣 复习</span><span>🟩 两者</span><span>🔴 未打卡</span>
-    </div>`:''}
-    ${(type==='sleep'||type==='wake')?`<div style="display:flex;gap:10px;justify-content:center;margin-top:6px;font-size:11px;color:var(--text-light)">
-      <span>🟢 成功</span><span>🔴 失败</span><span>⬜ 无记录</span>
-    </div>`:''}`;
-}
+function showMsg(m){var s=$('syncMsg')||(function(){var d=document.createElement('div');d.id='syncMsg';d.style.cssText='position:fixed;bottom:80px;right:16px;background:rgba(0,0,0,.75);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;z-index:999;transition:opacity .3s;pointer-events:none';document.body.appendChild(d);return d})();s.textContent=m;s.style.opacity='1';clearTimeout(s._t);s._t=setTimeout(function(){s.style.opacity='0'},2000)}
+function setToken(){var t=prompt('输入 Gitee Token:');if(t){localStorage.setItem('gitee_token',t.trim());showMsg('Token 已保存')}}
 
 // ========== English Reading Checkin ==========
 function getEngCheckins(){return getData('engcheckins')||{}}
