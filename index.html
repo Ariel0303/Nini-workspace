@@ -519,7 +519,7 @@ textarea{resize:vertical;min-height:70px}
       </div>
       <input type="text" id="yarnName" placeholder="给作品取个名字...">
       <textarea id="yarnDesc" placeholder="记录用到的线材、钩针号、心得..." style="min-height:80px"></textarea>
-      <button class="btn btn-primary" onclick="addYarn()" style="align-self:flex-start">🧶 添加作品</button>
+      <button class="btn btn-primary" id="yarnAddBtn" onclick="try{addYarn()}catch(e){showError('添加作品失败: '+e.message)}" style="align-self:flex-start">🧶 添加作品</button>
     </div>
   </div>
   <div id="yarnList" class="yarn-grid"></div>
@@ -1416,19 +1416,30 @@ function compressImage(file,maxW,maxH,quality){
 }
 
 async function addYarn(){
-  const name=$('yarnName').value.trim(),desc=$('yarnDesc').value.trim();
-  const fileInput=$('yarnImage'),file=fileInput.files[0];
-  if(!name){alert('请填写作品名字哦～');return;}
-  let img='';
-  if(file){
-    if(file.size>10*1024*1024){alert('图片太大啦，请选择 10MB 以内的照片');return;}
-    img=await compressImage(file,800,800,0.75);
+  const btn=$('yarnAddBtn');
+  try{
+    const name=$('yarnName').value.trim(),desc=$('yarnDesc').value.trim();
+    const fileInput=$('yarnImage'),file=fileInput.files[0];
+    if(!name){alert('请填写作品名字哦～');return;}
+    if(btn){btn.disabled=true;btn.textContent='🧶 处理中...';}
+    let img='';
+    if(file){
+      if(file.size>10*1024*1024){alert('图片太大啦，请选择 10MB 以内的照片');return;}
+      img=await compressImage(file,600,600,0.7);
+    }
+    const yarns=getYarns();
+    yarns.unshift({id:Date.now(),name,desc,image:img,date:TODAY});
+    saveYarns(yarns);
+    $('yarnName').value='';$('yarnDesc').value='';fileInput.value='';
+    renderYarns();
+    showMsg('作品添加成功！🧶');
+  }catch(e){
+    console.error('addYarn error',e);
+    if(e.name==='QuotaExceededError'||e.code===22){showError('保存失败：图片太大或作品太多，请删除一些旧作品或换张小图');}
+    else{showError('添加作品失败: '+e.message);}
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='🧶 添加作品';}
   }
-  const yarns=getYarns();
-  yarns.unshift({id:Date.now(),name,desc,image:img,date:TODAY});
-  saveYarns(yarns);
-  $('yarnName').value='';$('yarnDesc').value='';fileInput.value='';
-  renderYarns();
 }
 
 function deleteYarn(id){
