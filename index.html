@@ -1305,7 +1305,10 @@ function escHtml(s){const d=document.createElement('div');d.textContent=s;return
 
 // ========== Init ==========
 document.addEventListener('DOMContentLoaded', async function(){
-  if(!t()){var tk=prompt('请输入 Gitee Token：\ngitee.com → 设置 → 私人令牌 → 勾选 projects');if(tk)localStorage.setItem('gitee_token',tk.trim());}
+  if(!t()){
+    document.body.insertAdjacentHTML('afterbegin','<div id="tokenBox" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:30px"><div style="max-width:360px;text-align:center"><h2 style="color:#E91E63;margin-bottom:8px">☁️ 云端同步</h2><p style="color:#666;font-size:14px;margin-bottom:16px">请输入 Gitee Token 以启用数据同步<br><small>gitee.com → 设置 → 私人令牌</small></p><input id="tokenInput" placeholder="粘贴 Token" style="width:100%;padding:12px;font-size:15px;text-align:center;border:2px solid #E91E63;border-radius:12px;margin-bottom:12px"><button onclick="var v=document.getElementById(\'tokenInput\').value.trim();if(v){localStorage.setItem(\'gitee_token\',v);document.getElementById(\'tokenBox\').remove();location.reload()}" style="width:100%;padding:14px;background:#E91E63;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700">确认</button><button onclick="document.getElementById(\'tokenBox\').remove()" style="margin-top:10px;background:none;border:none;color:#999;font-size:13px">跳过（本地使用）</button></div></div>');
+    return;
+  }
   await loadGH();
   // Force push if we have local data but no cloud sha (first sync)
   if(!_sha){_d=!0;await syncGH();}
