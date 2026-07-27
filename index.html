@@ -476,18 +476,31 @@ let selectedMood = null;
 let expenseChart = null, moodChart = null, todoSummaryChart = null;
 
 function $(id){return document.getElementById(id)}
-function getData(key){try{return JSON.parse(localStorage.getItem(key)||'null')}catch(e){return null}}
-function setData(key,val){localStorage.setItem(key,JSON.stringify(val))}
 
-function initKey(key,def){if(getData(key)===null)setData(key,def)}
+// ===== GitHub Cloud Sync =====
+var _sha=null,_b=!1,_t=null;
+function gls(k,v){
+  if(arguments.length===1){try{return JSON.parse(localStorage.getItem('n_'+k)||'null')}catch(e){return null}}
+  localStorage.setItem('n_'+k,JSON.stringify(v));_b=!0;clearTimeout(_t);_t=setTimeout(pushGH,600)
+}
+function tk(){return localStorage.getItem('n_token')}
+async function ldGH(){
+  var t=tk();if(!t)return;try{var r=await fetch('https://api.github.com/repos/Ariel0303/Nini-workspace/contents/data.json',{headers:{Authorization:'token '+t}});if(!r.ok)return;var d=await r.json();_sha=d.sha;var a=JSON.parse(atob(d.content.replace(/\s/g,'')));for(var k in a)localStorage.setItem('n_'+k,JSON.stringify(a[k]));}catch(e){}
+}
+async function pushGH(){
+  if(!_b)return;_b=!1;var t=tk();if(!t)return;try{var a={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k.indexOf('n_')===0&&k!=='n_token')a[k.slice(2)]=JSON.parse(localStorage.getItem(k));}
+  var c=btoa(unescape(encodeURIComponent(JSON.stringify(a)))),body={message:'sync',content:c};if(_sha)body.sha=_sha;
+  var r=await fetch('https://api.github.com/repos/Ariel0303/Nini-workspace/contents/data.json',{method:'PUT',headers:{Authorization:'token '+t,'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok){var d=await r.json();_sha=d.content.sha;}}catch(e){_b=!0}
+}
+function idata(k,v){if(gls(k)===null)gls(k,v)}
 
 // Initialize all keys
 ['todos','checkins','expenses','moods','books'].forEach(k=>{
-  if(k==='todos')initKey(k,{});
-  else if(k==='checkins')initKey(k,{});
-  else if(k==='expenses')initKey(k,{});
-  else if(k==='moods')initKey(k,{});
-  else if(k==='books')initKey(k,[]);
+  if(k==='todos')idata(k,{});
+  else if(k==='checkins')idata(k,{});
+  else if(k==='expenses')idata(k,{});
+  else if(k==='moods')idata(k,{});
+  else if(k==='books')idata(k,[]);
 });
 
 // ========== Page Switch ==========
@@ -511,8 +524,8 @@ function formatDate(){
 }
 
 // ========== MODULE 1: Todos ==========
-function getTodos(){return getData('todos')[TODAY]||[]}
-function saveTodos(t){let all=getData('todos');all[TODAY]=t;setData('todos',all)}
+function getTodos(){return gls('todos')[TODAY]||[]}
+function saveTodos(t){let all=gls('todos');all[TODAY]=t;gls('todos',all)}
 
 function addTodo(){
   const text=$('todoText').value.trim();if(!text)return;
@@ -566,7 +579,7 @@ function catClass(c){return ({'生活办事':'life','学习':'study','工作':'w
 function catLabel(c){return ({'生活办事':'🏠 生活','学习':'📖 学习','工作':'💼 工作','娱乐':'🎮 娱乐','手工':'✂️ 手工'})[c]||c}
 
 function renderTodoSummary(){
-  const allTodos=getData('todos');
+  const allTodos=gls('todos');
   const now=new Date(),ym=now.getFullYear()+'-'+(now.getMonth()+1);
   const byCat={};
   let totalMonth=0;
@@ -598,8 +611,8 @@ function renderTodoSummary(){
 }
 
 // ========== MODULE 2: Checkin ==========
-function getCheckins(){return getData('checkins')[TODAY]||{}}
-function saveCheckins(c){let all=getData('checkins');all[TODAY]=c;setData('checkins',all)}
+function getCheckins(){return gls('checkins')[TODAY]||{}}
+function saveCheckins(c){let all=gls('checkins');all[TODAY]=c;gls('checkins',all)}
 
 function setCheckinStatus(type,status){
   try{
@@ -660,7 +673,7 @@ function toggleCalendar(type){
 
 function renderCalendar(type){
   const el=$('cal-'+type);if(!el.classList.contains('show'))return;
-  const allCheckins=type==='engread'?getData('engcheckins'):type==='engscene'?getData('scene_checkins'):type==='lifescene'?getData('life_scene_checkins'):getData('checkins');
+  const allCheckins=type==='engread'?gls('engcheckins'):type==='engscene'?gls('scene_checkins'):type==='lifescene'?gls('life_scene_checkins'):gls('checkins');
   const now=new Date(),year=now.getFullYear(),month=now.getMonth();
   const daysInMonth=new Date(year,month+1,0).getDate();
   const firstDay=(new Date(year,month,1).getDay()+6)%7;
@@ -710,8 +723,8 @@ function renderCalendar(type){
 }
 
 // ========== English Reading Checkin ==========
-function getEngCheckins(){return getData('engcheckins')||{}}
-function saveEngCheckins(c){setData('engcheckins',c)}
+function getEngCheckins(){return gls('engcheckins')||{}}
+function saveEngCheckins(c){gls('engcheckins',c)}
 
 function toggleEngRead(kind){
   const c=getEngCheckins();c[TODAY]=c[TODAY]||{};
@@ -732,10 +745,10 @@ function renderEngRead(){
 }
 
 // ========== English Scene Checkin ==========
-function getSceneData(){return getData('scene_data')||[]}
-function saveSceneData(d){setData('scene_data',d)}
-function getSceneCheckins(){return getData('scene_checkins')||{}}
-function saveSceneCheckins(c){setData('scene_checkins',c)}
+function getSceneData(){return gls('scene_data')||[]}
+function saveSceneData(d){gls('scene_data',d)}
+function getSceneCheckins(){return gls('scene_checkins')||{}}
+function saveSceneCheckins(c){gls('scene_checkins',c)}
 
 function addScene(){
   const name=$('sceneName').value.trim();if(!name)return;
@@ -847,10 +860,10 @@ function renderEngScene(){
 }
 
 // ========== Life Scene Checkin ==========
-function getLifeSceneData(){return getData('life_scene_data')||[]}
-function saveLifeSceneData(d){setData('life_scene_data',d)}
-function getLifeSceneCheckins(){return getData('life_scene_checkins')||{}}
-function saveLifeSceneCheckins(c){setData('life_scene_checkins',c)}
+function getLifeSceneData(){return gls('life_scene_data')||[]}
+function saveLifeSceneData(d){gls('life_scene_data',d)}
+function getLifeSceneCheckins(){return gls('life_scene_checkins')||{}}
+function saveLifeSceneCheckins(c){gls('life_scene_checkins',c)}
 
 function addLifeScene(){
   const name=$('lifeSceneName').value.trim();if(!name)return;
@@ -921,8 +934,8 @@ function renderLifeSceneCk(){
 }
 
 // ========== English Think Courses ==========
-function getThinkCourses(){return getData('think_courses')||{}}
-function saveThinkCourses(c){setData('think_courses',c)}
+function getThinkCourses(){return gls('think_courses')||{}}
+function saveThinkCourses(c){gls('think_courses',c)}
 
 function setThinkProgress(n,val){
   const c=getThinkCourses();v=Math.min(100,Math.max(0,parseInt(val)||0));
@@ -962,8 +975,8 @@ function renderThinkCourses(){
 }
 
 // ========== MODULE 3: Expenses ==========
-function getExpenses(){return getData('expenses')[TODAY]||[]}
-function saveExpenses(e){let all=getData('expenses');all[TODAY]=e;setData('expenses',all)}
+function getExpenses(){return gls('expenses')[TODAY]||[]}
+function saveExpenses(e){let all=gls('expenses');all[TODAY]=e;gls('expenses',all)}
 
 function renderCatTags(){
   $('catTags').innerHTML=CATS.map(c=>`<div class="cat-tag${c===selectedCat?' active':''}" onclick="selectCat('${c}')">${c}</div>`).join('');
@@ -1009,8 +1022,8 @@ function renderExpenseChart(){
 }
 
 // ========== MODULE 4: Mood ==========
-function getMoods(){return getData('moods')}
-function saveMoods(m){setData('moods',m)}
+function getMoods(){return gls('moods')}
+function saveMoods(m){gls('moods',m)}
 
 function renderMoodOptions(){
   $('moodOptions').innerHTML=MOODS.map(m=>`<div class="mood-opt${selectedMood&&selectedMood.e===m.e?' selected':''}" onclick="pickMood('${m.e}','${m.w}',${m.v})" title="${m.w}">${m.e}</div>`).join('');
@@ -1076,8 +1089,8 @@ function renderMoodChart(){
 }
 
 // ========== MODULE 5: Books ==========
-function getBooks(){return getData('books')}
-function saveBooks(b){setData('books',b)}
+function getBooks(){return gls('books')}
+function saveBooks(b){gls('books',b)}
 
 function addBook(){
   const name=$('bookName').value.trim(),author=$('bookAuthor').value.trim(),pages=parseInt($('bookPages').value);
@@ -1238,8 +1251,8 @@ function processAI(){
 function exportData(){
   const data={
     version:'1.0',exportTime:new Date().toISOString(),
-    todos:getData('todos'),checkins:getData('checkins'),
-    expenses:getData('expenses'),moods:getData('moods'),books:getData('books')
+    todos:gls('todos'),checkins:gls('checkins'),
+    expenses:gls('expenses'),moods:gls('moods'),books:gls('books')
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
@@ -1252,11 +1265,11 @@ function importData(event){
   reader.onload=function(e){
     try{
       const data=JSON.parse(e.target.result);
-      if(data.todos)setData('todos',data.todos);
-      if(data.checkins)setData('checkins',data.checkins);
-      if(data.expenses)setData('expenses',data.expenses);
-      if(data.moods)setData('moods',data.moods);
-      if(data.books)setData('books',data.books);
+      if(data.todos)gls('todos',data.todos);
+      if(data.checkins)gls('checkins',data.checkins);
+      if(data.expenses)gls('expenses',data.expenses);
+      if(data.moods)gls('moods',data.moods);
+      if(data.books)gls('books',data.books);
       alert('导入成功！正在为妮妮加载...');location.reload();
     }catch(err){alert('导入失败：文件格式不正确哦，妮妮');}
   };
@@ -1267,7 +1280,9 @@ function importData(event){
 function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
 // ========== Init ==========
-document.addEventListener('DOMContentLoaded', function(){
+document.addEventListener('DOMContentLoaded', async function(){
+  if(!tk()){var t=prompt('首次使用请输入 GitHub Token（仅需一次）：\n获取：github.com/settings/tokens → 勾选 repo');if(t)localStorage.setItem('n_token',t.trim());else{document.body.innerHTML='<div style="text-align:center;padding:80px;color:#E91E63"><p>需要 Token 才能云端同步</p><button onclick="location.reload()" style="padding:12px 30px;background:#E91E63;color:#fff;border:none;border-radius:10px;font-size:16px">重新输入</button></div>';return;}}
+  await ldGH();
   // Auto-collapse all cards
   document.querySelectorAll('.card').forEach(card=>{
     if(card.querySelector('.card-body'))return; // already wrapped
@@ -1282,12 +1297,12 @@ document.addEventListener('DOMContentLoaded', function(){
       this.querySelector('.fs-arrow').textContent=body.classList.contains('hidden')?'▸':'▾';
     };
   });
-  if(getData('engcheckins')===null)setData('engcheckins',{});
-  if(getData('think_courses')===null)setData('think_courses',{});
-  if(getData('scene_checkins')===null)setData('scene_checkins',{});
-  if(getData('scene_data')===null)setData('scene_data',[]);
-  if(getData('life_scene_data')===null)setData('life_scene_data',[]);
-  if(getData('life_scene_checkins')===null)setData('life_scene_checkins',{});
+  if(gls('engcheckins')===null)gls('engcheckins',{});
+  if(gls('think_courses')===null)gls('think_courses',{});
+  if(gls('scene_checkins')===null)gls('scene_checkins',{});
+  if(gls('scene_data')===null)gls('scene_data',[]);
+  if(gls('life_scene_data')===null)gls('life_scene_data',[]);
+  if(gls('life_scene_checkins')===null)gls('life_scene_checkins',{});
   renderTodos();renderCheckins();renderCatTags();renderExpenses();renderMoodOptions();renderMoodHistory();renderMoodChart();renderBooks();renderTodoSummary();renderEngRead();renderEngScene();renderSceneList();renderLifeSceneList();renderLifeSceneCk();renderThinkCourses();
 });
 </script>
