@@ -526,7 +526,15 @@ var _sha=null;
 function gt(){return localStorage.getItem('gitee_token')}
 async function pushCloud(){
   var tk=gt();if(!tk){alert('请先设置 Token');return;}
-  try{var a={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k!=='gitee_token')try{a[k]=JSON.parse(localStorage.getItem(k))}catch(x){a[k]=localStorage.getItem(k)}}
+  try{
+  // If no local sha, fetch from cloud first
+  if(!_sha){
+    try{
+      var r0=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk);
+      if(r0.ok){var d0=await r0.json();_sha=d0.sha;}
+    }catch(e){console.log('fetch sha failed',e);}
+  }
+  var a={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k!=='gitee_token')try{a[k]=JSON.parse(localStorage.getItem(k))}catch(x){a[k]=localStorage.getItem(k)}}
   var json=JSON.stringify(a),c=btoa(unescape(encodeURIComponent(json))),body={access_token:tk,content:c,message:'manual'};if(_sha)body.sha=_sha;
   console.log('PUSH body size:',json.length,'sha:',_sha);
   var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json',{method:'PUT',headers:{'Content-Type':'application/json;charset=UTF-8'},body:JSON.stringify(body)});
