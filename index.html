@@ -507,7 +507,7 @@ function scheduleSync(){_d=!0;clearTimeout(_tmr);_tmr=setTimeout(syncGH,600)}
 function t(){return localStorage.getItem('gitee_token')}
 async function loadGH(){
   var tk=t();if(!tk)return;
-  try{var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk);if(!r.ok)return;var d=await r.json();_sha=d.sha;var a=JSON.parse(atob(d.content.replace(/\s/g,'')));for(var k in a)localStorage.setItem(k,JSON.stringify(a[k]));}catch(e){}
+  try{var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk);if(!r.ok)return;var d=await r.json();_sha=d.sha;var a=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\s/g,'')))));for(var k in a)localStorage.setItem(k,JSON.stringify(a[k]));}catch(e){}
 }
 async function syncGH(){
   if(!_d)return;_d=!1;var tk=t();if(!tk)return;
