@@ -783,7 +783,7 @@ function renderThinkCourses(){
 }
 
 // ========== MODULE 3: Expenses ==========
-function getExpenses(){return getData('expenses')[TODAY]||[]}
+function getExpenses(){return (getData('expenses')||{})[TODAY]||[]}
 function saveExpenses(e){let all=getData('expenses');all[TODAY]=e;setData('expenses',all)}
 
 function renderCatTags(){
@@ -830,7 +830,7 @@ function renderExpenseChart(){
 }
 
 // ========== MODULE 4: Mood ==========
-function getMoods(){return getData('moods')}
+function getMoods(){return getData('moods')||{}}
 function saveMoods(m){setData('moods',m)}
 
 function renderMoodOptions(){
@@ -897,7 +897,7 @@ function renderMoodChart(){
 }
 
 // ========== MODULE 5: Books ==========
-function getBooks(){return getData('books')}
+function getBooks(){return getData('books')||[]}
 function saveBooks(b){setData('books',b)}
 
 function addBook(){
@@ -1309,7 +1309,9 @@ document.addEventListener('DOMContentLoaded', function(){
   if(getData('scene_data')===null)setData('scene_data',[]);
   if(getData('life_scene_data')===null)setData('life_scene_data',[]);
   if(getData('life_scene_checkins')===null)setData('life_scene_checkins',{});
-  renderTodos();renderCheckins();renderCatTags();renderExpenses();renderMoodOptions();renderMoodHistory();renderMoodChart();renderBooks();renderTodoSummary();renderEngRead();renderEngScene();renderSceneList();renderLifeSceneList();renderLifeSceneCk();renderThinkCourses();
+  // Safe init renders
+  const inits=[()=>{renderTodos()},()=>{renderCheckins()},()=>{renderCatTags()},()=>{renderExpenses()},()=>{renderMoodOptions()},()=>{renderMoodHistory()},()=>{renderMoodChart()},()=>{renderBooks()},()=>{renderTodoSummary()},()=>{renderEngRead()},()=>{renderEngScene()},()=>{renderSceneList()},()=>{renderLifeSceneList()},()=>{renderLifeSceneCk()},()=>{renderThinkCourses()}];
+  inits.forEach(fn=>{try{fn()}catch(e){console.error('Init error:',e)}});
 });
 </script>
 </body>
