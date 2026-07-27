@@ -529,18 +529,27 @@ async function pushCloud(){
   try{var a={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k!=='gitee_token')try{a[k]=JSON.parse(localStorage.getItem(k))}catch(x){a[k]=localStorage.getItem(k)}}
   var c=btoa(unescape(encodeURIComponent(JSON.stringify(a)))),body={content:c,message:'manual'};if(_sha)body.sha=_sha;
   var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(r.ok){var d=await r.json();_sha=d.content.sha;showMsg('推送成功')}else showMsg('推送失败')
-  }catch(e){showMsg('推送失败')}
+  if(r.ok){var d=await r.json();_sha=d.content.sha;showMsg('推送成功')}else{var txt=await r.text();showMsg('推送失败 '+r.status);console.error('PUSH FAIL',r.status,txt);}
+  }catch(e){showMsg('推送失败 '+e.message);console.error('PUSH ERROR',e)}
 }
 async function pullCloud(){
   var tk=gt();if(!tk){alert('请先设置 Token');return;}
   if(!confirm('云端数据将覆盖本地，确定？'))return;
-  try{var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk);if(!r.ok){showMsg('云端无数据');return}
+  try{var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk);if(!r.ok){var txt=await r.text();showMsg('云端无数据 '+r.status);console.error('PULL FAIL',r.status,txt);return}
   var d=await r.json();_sha=d.sha;var a=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\s/g,'')))));
-  for(var k in a)localStorage.setItem(k,JSON.stringify(a[k]));showMsg('加载成功');location.reload()}catch(e){showMsg('加载失败')}
+  for(var k in a)localStorage.setItem(k,JSON.stringify(a[k]));showMsg('加载成功');location.reload()}catch(e){showMsg('加载失败 '+e.message);console.error('PULL ERROR',e)}
 }
 function showMsg(m){var s=$('syncMsg')||(function(){var d=document.createElement('div');d.id='syncMsg';d.style.cssText='position:fixed;bottom:80px;right:16px;background:rgba(0,0,0,.75);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;z-index:999;transition:opacity .3s;pointer-events:none';document.body.appendChild(d);return d})();s.textContent=m;s.style.opacity='1';clearTimeout(s._t);s._t=setTimeout(function(){s.style.opacity='0'},2000)}
-function setToken(){var t=prompt('输入 Gitee Token:');if(t){localStorage.setItem('gitee_token',t.trim());showMsg('Token 已保存')}}
+function setToken(){
+  var t=prompt('输入 Gitee Token:');
+  if(t){localStorage.setItem('gitee_token',t.trim());showMsg('Token 已保存')}
+}
+
+function readTokenFromURL(){
+  var m=location.search.match(/[?&]token=([^&]+)/);
+  if(m){var tk=decodeURIComponent(m[1]);localStorage.setItem('gitee_token',tk);return true;}
+  return false;
+}
 
 // ========== English Reading Checkin ==========
 function getEngCheckins(){return getData('engcheckins')||{}}
@@ -1326,6 +1335,8 @@ function escHtml(s){const d=document.createElement('div');d.textContent=s;return
 
 // ========== Init ==========
 document.addEventListener('DOMContentLoaded', function(){
+  // Read token from URL if present
+  if(readTokenFromURL())showMsg('已从链接读取 Token');
   // Set today's date labels
   const d=new Date(),weekdays=['周日','周一','周二','周三','周四','周五','周六'];
   const dstr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${weekdays[d.getDay()]}`;
