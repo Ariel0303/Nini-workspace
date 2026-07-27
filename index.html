@@ -506,6 +506,8 @@ var _sha=null,_d=!1,_tmr=null;
 function scheduleSync(){_d=!0;clearTimeout(_tmr);_tmr=setTimeout(syncGH,600)}
 function t(){return localStorage.getItem('gitee_token')}
 async function loadGH(){
+  // Only load from cloud if local is empty
+  var hasLocal=getData('todos');if(hasLocal&&typeof hasLocal==='object'&&Object.keys(hasLocal).length>0)return;
   var tk=t();if(!tk)return;
   try{var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk);if(!r.ok)return;var d=await r.json();_sha=d.sha;var a=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\s/g,'')))));for(var k in a)localStorage.setItem(k,JSON.stringify(a[k]));}catch(e){}
 }
@@ -538,6 +540,14 @@ function initKey(key,def){if(getData(key)===null)setData(key,def)}
 // ========== Page Switch ==========
 function switchPage(name){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===name));
+  // Add reset button if not present
+  if(!$('resetBtn')){
+    var rb=document.createElement('button');rb.id='resetBtn';
+    rb.style.cssText='position:fixed;top:8px;right:8px;z-index:999;padding:4px 10px;background:#EF5350;color:#fff;border:none;border-radius:8px;font-size:11px;cursor:pointer;opacity:.7';
+    rb.textContent='重置';rb.title='清除本地缓存';
+    rb.onclick=function(){if(confirm('确定清除所有本地数据？云端已有备份不会丢失。')){var tk=localStorage.getItem('gitee_token');localStorage.clear();if(tk)localStorage.setItem('gitee_token',tk);location.reload();}};
+    document.body.appendChild(rb);
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
   if(name==='expense'){renderExpenseChart();}
   if(name==='mood'){renderMoodChart();renderMoodHistory();}
@@ -1319,8 +1329,6 @@ document.addEventListener('DOMContentLoaded', async function(){
   }
   // Force initial sync after load
   await loadGH();
-  // Fix corrupted local data
-  try{var test=JSON.parse(localStorage.getItem('todos')||'null');if(test&&typeof test==='object'){var kk=Object.keys(test)[0];if(kk&&kk.indexOf('%')>-1){console.log('fixing encoded data...');for(var i=0;i<localStorage.length;i++){var kk2=localStorage.key(i);if(kk2!=='gitee_token')try{var v=localStorage.getItem(kk2);localStorage.setItem(kk2,JSON.stringify(JSON.parse(decodeURIComponent(v))))}catch(x){}}}};}catch(e){}
   _d=!0;syncGH();
   // Auto-collapse all cards
   document.querySelectorAll('.card').forEach(card=>{
