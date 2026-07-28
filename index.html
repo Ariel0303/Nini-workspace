@@ -564,7 +564,7 @@ textarea{resize:vertical;min-height:70px}
         <p style="font-size:12px;color:var(--text-light);margin-top:4px">图片会自动压缩，建议上传 2MB 以内照片</p>
       </div>
       <input type="text" id="yarnName" placeholder="给这段生命赋予一个名字">
-      <textarea id="yarnMeaning" placeholder="用一句话写下这个这段生命对你的特殊意义..." style="min-height:56px"></textarea>
+      <textarea id="yarnMeaning" placeholder="用一句话写下这段生命对你的特殊意义..." style="min-height:56px"></textarea>
       <textarea id="yarnDesc" placeholder="记录用到的线材、钩针号、心得..." style="min-height:80px"></textarea>
       <button class="btn btn-primary" id="yarnAddBtn" onclick="try{addYarn()}catch(e){showError('添加一小段毛线生命失败: '+e.message)}" style="align-self:flex-start">🧶 添加一小段毛线生命</button>
     </div>
@@ -1668,7 +1668,7 @@ function renderYarns(){
           <input type="file" id="yarnEditImg-${y.id}" accept="image/*">
           <p style="font-size:11px;color:var(--text-light);margin:0">不选新图则保留当前图片</p>
           <input type="text" id="yarnEditName-${y.id}" value="${escHtml(y.name)}" placeholder="给这段生命赋予一个名字">
-          <textarea id="yarnEditMeaning-${y.id}" placeholder="用一句话写下这个这段生命对你的特殊意义..." style="min-height:56px">${escHtml(y.meaning||'')}</textarea>
+          <textarea id="yarnEditMeaning-${y.id}" placeholder="用一句话写下这段生命对你的特殊意义..." style="min-height:56px">${escHtml(y.meaning||'')}</textarea>
           <textarea id="yarnEditDesc-${y.id}" placeholder="描述...">${escHtml(y.desc||'')}</textarea>
           <div class="yarn-edit-actions">
             <button class="btn-save" onclick="saveYarnEdit(${y.id})">💾 保存</button>
