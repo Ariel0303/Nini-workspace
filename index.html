@@ -140,6 +140,22 @@ textarea{resize:vertical;min-height:70px}
 .think-input input{width:70px;padding:6px 10px;font-size:13px;text-align:center}
 .think-input button{padding:6px 12px;font-size:12px;border-radius:8px}
 
+/* Shang Wenjie English Method */
+.swj-item{background:var(--cream);border-radius:12px;padding:14px;margin-bottom:10px;border:2px solid var(--border);transition:.2s}
+.swj-item.done{border-color:var(--low);background:#E8F5E9}
+.swj-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px}
+.swj-title{font-size:15px;font-weight:700;color:var(--dark);flex:1;word-break:break-all}
+.swj-tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:#FFF3E0;color:#E65100;margin-left:6px;white-space:nowrap}
+.swj-source{font-size:12px;color:var(--text-light);margin-bottom:10px;word-break:break-all}
+.swj-source a{color:var(--rose);text-decoration:none}
+.swj-steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.swj-step-btn{flex:1;min-width:90px;padding:8px 10px;border:2px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:var(--text);transition:.2s;display:flex;align-items:center;justify-content:center;gap:4px}
+.swj-step-btn.done{background:var(--low);border-color:var(--low);color:#1B5E20}
+.swj-step-btn:hover:not(.done){border-color:var(--pink-deep);color:var(--rose)}
+.swj-meta{font-size:11px;color:var(--text-light);display:flex;justify-content:space-between;align-items:center}
+.swj-empty{text-align:center;color:var(--text-light);padding:16px;font-size:13px}
+.swj-archive-count{font-size:12px;color:var(--text-light);font-weight:400}
+
 /* Expense */
 .expense-form{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
 .expense-form input{flex:1;min-width:120px}
@@ -509,7 +525,34 @@ textarea{resize:vertical;min-height:70px}
       <div class="checkin-calendar" id="cal-engread"></div>
     </div>
   </div>
-  <!-- 模块2：英语思维训练课程 -->
+  <!-- 模块2：尚雯婕听背练 -->
+  <div class="card" id="ci-shangwj">
+    <div class="card-title">🎙️ 尚雯婕听背练</div>
+    <p style="margin-bottom:12px;color:var(--text-light);font-size:13px">选一段 20 分钟材料：听写 → 背诵 → 复述</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+      <div style="display:flex;gap:8px">
+        <input type="text" id="swjTitle" placeholder="材料标题，如：乔布斯斯坦福演讲" style="flex:1;font-size:13px">
+        <input type="text" id="swjTag" placeholder="话题标签" style="width:100px;font-size:13px">
+      </div>
+      <input type="text" id="swjSource" placeholder="来源链接或备注（可选）" style="font-size:13px">
+      <button class="btn btn-primary btn-sm" onclick="addShangWJ()" style="align-self:flex-start">➕ 添加材料</button>
+    </div>
+    <div id="swjActiveList"></div>
+    <div id="swjArchiveWrap" style="display:none;margin-top:16px;border-top:2px dashed var(--border);padding-top:14px">
+      <div class="card-title" style="font-size:15px;cursor:pointer" onclick="toggleSwjArchive()">📦 已通关归档 <span id="swjArchiveArrow">▸</span></div>
+      <div id="swjArchiveList" style="display:none"></div>
+    </div>
+    <div style="border-top:2px dashed var(--border);padding-top:14px;margin-top:14px">
+      <div style="display:flex;gap:10px;margin-bottom:10px">
+        <button class="checkin-btn unchecked" id="btn-shangwj-new" onclick="toggleShangWJ('new')" style="flex:1">📖 新学习</button>
+        <button class="checkin-btn unchecked" id="btn-shangwj-review" onclick="toggleShangWJ('review')" style="flex:1">🔄 复习</button>
+      </div>
+      <div class="checkin-cal-toggle" onclick="toggleCalendar('shangwj')">📅 本月打卡记录 ▸</div>
+      <div class="checkin-calendar" id="cal-shangwj"></div>
+    </div>
+  </div>
+
+  <!-- 模块3：英语思维训练课程 -->
   <div class="card">
     <div class="card-title">🧠 英语思维训练课程</div>
     <div style="margin-bottom:12px">
@@ -973,6 +1016,120 @@ function renderLifeSceneCk(){
   btnReview.className='checkin-btn '+(rv?'checked':'unchecked');
   btnReview.textContent=rv?'🔄 已打卡 ✓':'🔄 复习';
   if($('cal-lifescene').classList.contains('show'))renderCalendar('lifescene');
+}
+
+// ========== Shang Wenjie English Method ==========
+function getSwjData(){return getData('shangwj_data')||[]}
+function saveSwjData(d){setData('shangwj_data',d)}
+function getSwjCheckins(){return getData('shangwj_checkins')||{}}
+function saveSwjCheckins(c){setData('shangwj_checkins',c)}
+const SWJ_STEPS=[
+  {key:'dictation',label:'📝 听写',doneLabel:'听写 ✓'},
+  {key:'recite',label:'🗣️ 背诵',doneLabel:'背诵 ✓'},
+  {key:'retell',label:'🎤 复述',doneLabel:'复述 ✓'}
+];
+
+function addShangWJ(){
+  const title=$('swjTitle').value.trim();if(!title){alert('请输入材料标题');return;}
+  const tag=$('swjTag').value.trim();
+  const source=$('swjSource').value.trim();
+  const d=getSwjData();
+  d.push({id:Date.now(),date:TODAY,title,tag,source,steps:{dictation:false,recite:false,retell:false},archived:false,logs:[]});
+  saveSwjData(d);
+  $('swjTitle').value='';$('swjTag').value='';$('swjSource').value='';
+  renderSwjList();
+}
+
+function toggleSwjStep(id,stepKey){
+  const d=getSwjData();const s=d.find(x=>x.id===id);if(!s)return;
+  s.steps=Object.assign({dictation:false,recite:false,retell:false},s.steps);
+  const nowDone=!s.steps[stepKey];
+  s.steps[stepKey]=nowDone;
+  if(!s.logs)s.logs=[];
+  s.logs.push({date:TODAY,step:stepKey,done:nowDone});
+  s.lastDate=TODAY;
+  const allDone=SWJ_STEPS.every(st=>!!s.steps[st.key]);
+  if(allDone&&!s.archived){s.archived=true;s.archiveDate=TODAY;}
+  if(!allDone&&s.archived){s.archived=false;delete s.archiveDate;}
+  saveSwjData(d);renderSwjList();
+}
+
+function unarchiveSwj(id){
+  const d=getSwjData();const s=d.find(x=>x.id===id);if(!s)return;
+  s.archived=false;delete s.archiveDate;
+  saveSwjData(d);renderSwjList();
+}
+
+function delSwj(id){
+  if(!confirm('删除这个材料？'))return;
+  const d=getSwjData().filter(x=>x.id!==id);saveSwjData(d);renderSwjList();
+}
+
+function renderSwjCard(s,isArchive){
+  const allDone=SWJ_STEPS.every(st=>!!(s.steps||{})[st.key]);
+  const sourceHtml=s.source?(/^https?:\/\//.test(s.source)?`<a href="${escHtml(s.source)}" target="_blank">${escHtml(s.source)} ↗</a>`:escHtml(s.source)):'';
+  const tagHtml=s.tag?`<span class="swj-tag">${escHtml(s.tag)}</span>`:'';
+  const dateLabel=s.date===TODAY?'今天':s.date.slice(5);
+  return `
+  <div class="swj-item${allDone?' done':''}">
+    <div class="swj-head">
+      <div>
+        <span class="swj-title">${escHtml(s.title)}${tagHtml}</span>
+        <div style="font-size:11px;color:var(--text-light);margin-top:2px">开始于 ${dateLabel}${s.lastDate?' · 最近练习 '+s.lastDate:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        ${isArchive?'<span class="todo-del" onclick="unarchiveSwj('+s.id+')">↩</span>':''}
+        <span class="todo-del" onclick="delSwj(${s.id})">×</span>
+      </div>
+    </div>
+    ${sourceHtml?`<div class="swj-source">${sourceHtml}</div>`:''}
+    <div class="swj-steps">
+      ${SWJ_STEPS.map(st=>{
+        const done=!!(s.steps||{})[st.key];
+        return `<button class="swj-step-btn${done?' done':''}" onclick="toggleSwjStep(${s.id},'${st.key}')">${done?st.doneLabel:st.label}</button>`;
+      }).join('')}
+    </div>
+    ${allDone?'<div class="swj-meta"><span style="color:#2E7D32;font-weight:700">✅ 三阶段已完成</span></div>':''}
+  </div>`;
+}
+
+function toggleSwjArchive(){
+  const box=$('swjArchiveList'),arrow=$('swjArchiveArrow');
+  const isOpen=box.style.display==='block';
+  box.style.display=isOpen?'none':'block';
+  arrow.textContent=isOpen?'▸':'▾';
+}
+
+function renderSwjList(){
+  const all=getSwjData();
+  const active=all.filter(x=>!x.archived);
+  const archived=all.filter(x=>x.archived);
+  $('swjActiveList').innerHTML=active.length?active.sort((a,b)=>b.id-a.id).map(s=>renderSwjCard(s,false)).join(''):'<p class="swj-empty">还没有材料哦，添加一段开始练习吧~</p>';
+  if(archived.length){
+    $('swjArchiveWrap').style.display='block';
+    $('swjArchiveList').innerHTML=archived.sort((a,b)=>b.id-a.id).map(s=>renderSwjCard(s,true)).join('');
+  }else{
+    $('swjArchiveWrap').style.display='none';
+  }
+  renderShangWJ();
+}
+
+function toggleShangWJ(kind){
+  const c=getSwjCheckins();c[TODAY]=c[TODAY]||{};
+  c[TODAY][kind]=!c[TODAY][kind];
+  saveSwjCheckins(c);renderShangWJ();
+}
+
+function renderShangWJ(){
+  const c=getSwjCheckins();const today=c[TODAY]||{};
+  const nw=!!today.new,rv=!!today.review;
+  const btnNew=$('btn-shangwj-new'),btnReview=$('btn-shangwj-review');
+  btnNew.className='checkin-btn '+(nw?'checked':'unchecked');
+  btnNew.textContent=nw?'📖 已打卡 ✓':'📖 新学习';
+  btnReview.className='checkin-btn '+(rv?'checked':'unchecked');
+  btnReview.textContent=rv?'🔄 已打卡 ✓':'🔄 复习';
+  $('ci-shangwj').className='card'+(nw||rv?' done':'');
+  if($('cal-shangwj').classList.contains('show'))renderCalendar('shangwj');
 }
 
 // ========== English Think Courses ==========
@@ -1588,7 +1745,8 @@ const CAL_TYPES={
   water:{rootKey:'checkins',subKey:'water',getColor:(arr)=>arr&&arr.length>0?'checked':'',getLabel:''},
   engread:{key:'engcheckins',isEng:true,subKey:'engread'},
   engscene:{key:'scene_checkins',isEng:true,subKey:'engscene'},
-  lifescene:{key:'life_scene_checkins',isEng:true,subKey:'lifescene'}
+  lifescene:{key:'life_scene_checkins',isEng:true,subKey:'lifescene'},
+  shangwj:{key:'shangwj_checkins',isEng:true,subKey:'shangwj'}
 };
 
 const calState={};
@@ -1873,7 +2031,7 @@ document.addEventListener('DOMContentLoaded', function(){
   if(getData('life_scene_checkins')===null)setData('life_scene_checkins',{});
   if(getData('yarns')===null)setData('yarns',[]);
   // Safe init renders
-  const inits=[()=>{renderTodos()},()=>{renderCheckins()},()=>{renderCatTags()},()=>{renderExpenses()},()=>{renderMoodOptions()},()=>{renderMoodHistory()},()=>{renderMoodChart()},()=>{renderBooks()},()=>{renderTodoSummary()},()=>{renderEngRead()},()=>{renderEngScene()},()=>{renderSceneList()},()=>{renderLifeSceneList()},()=>{renderLifeSceneCk()},()=>{renderThinkCourses()},()=>{renderYarns()}];
+  const inits=[()=>{renderTodos()},()=>{renderCheckins()},()=>{renderCatTags()},()=>{renderExpenses()},()=>{renderMoodOptions()},()=>{renderMoodHistory()},()=>{renderMoodChart()},()=>{renderBooks()},()=>{renderTodoSummary()},()=>{renderEngRead()},()=>{renderEngScene()},()=>{renderSceneList()},()=>{renderLifeSceneList()},()=>{renderLifeSceneCk()},()=>{renderThinkCourses()},()=>{renderSwjList()},()=>{renderShangWJ()},()=>{renderYarns()}];
   inits.forEach(fn=>{try{fn()}catch(e){console.error('Init error:',e)}});
 });
 </script>
