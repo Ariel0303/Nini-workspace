@@ -81,6 +81,11 @@ textarea{resize:vertical;min-height:70px}
 .todo-del{cursor:pointer;color:var(--rose);font-size:20px;opacity:.45;transition:.2s;font-weight:700}.todo-del:hover{opacity:1}
 .progress-bar{height:12px;background:var(--pink-soft);border-radius:6px;overflow:hidden;margin-top:14px}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--pink-deep),var(--rose));border-radius:6px;transition:.4s}
+.history-date{font-size:13px;font-weight:700;color:var(--rose);margin:14px 0 8px;padding-left:4px;border-left:3px solid var(--pink)}
+.history-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:var(--cream);margin-bottom:6px;opacity:.85}
+.history-item .todo-check.checked{width:20px;height:20px;font-size:12px;border-width:2px}
+.history-item .todo-text{font-size:13.5px;text-decoration:line-through;color:var(--text-light)}
+.history-empty{text-align:center;color:var(--text-light);padding:20px;font-size:13px}
 
 .stats-row{display:flex;gap:16px;margin-bottom:20px}
 .stat-card{flex:1;background:var(--card);border-radius:var(--radius);padding:18px;border:2px solid var(--border);text-align:center}
@@ -329,6 +334,10 @@ textarea{resize:vertical;min-height:70px}
     <div class="card-title">📊 本月任务分布</div>
     <div class="chart-container"><canvas id="todoSummaryChart"></canvas></div>
     <p style="text-align:center;margin-top:10px;font-size:13px;color:var(--text-light)" id="todoSummaryText"></p>
+  </div>
+  <div class="card" id="historyCard" style="display:none">
+    <div class="card-title" style="cursor:pointer" onclick="toggleTodoHistory()">📜 历史已完成任务 <span id="historyToggle">▸</span></div>
+    <div id="todoHistory" style="display:none"></div>
   </div>
 </div>
 
@@ -1255,6 +1264,34 @@ function renderTodos(){
     </div>`;
   }).join('');
   $('planProgressBar').style.width=(totalToday?doneToday/totalToday*100:0)+'%';
+  renderTodoHistory();
+}
+
+function toggleTodoHistory(){
+  const box=$('todoHistory'),arrow=$('historyToggle'),card=$('historyCard');
+  if(box.style.display==='none'){box.style.display='block';arrow.textContent='▾';card.style.display='block';}
+  else{box.style.display='none';arrow.textContent='▸';}
+}
+
+function renderTodoHistory(){
+  const todos=getTodos(),box=$('todoHistory'),card=$('historyCard');
+  const history=todos.filter(t=>t.done&&t.date&&t.date!==TODAY).sort((a,b)=>b.date.localeCompare(a.date));
+  if(!history.length){card.style.display='none';return;}
+  card.style.display='block';
+  const grouped={};
+  history.forEach(t=>{grouped[t.date]=grouped[t.date]||[];grouped[t.date].push(t);});
+  const dates=Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
+  box.innerHTML=dates.map(date=>`
+    <div class="history-date">${date}</div>
+    ${grouped[date].map(t=>{
+      const ccls={生活办事:'cat-life',学习:'cat-study',工作:'cat-work',娱乐:'cat-fun',手工:'cat-hand'}[t.cat]||'';
+      return `<div class="history-item">
+        <div class="todo-check checked">✓</div>
+        <span class="todo-text">${escHtml(t.text)}</span>
+        <span class="cat-todo ${ccls}">${escHtml(t.cat)}</span>
+      </div>`;
+    }).join('')}
+  `).join('');
 }
 
 function renderTodoSummary(){
