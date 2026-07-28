@@ -202,28 +202,30 @@ textarea{resize:vertical;min-height:70px}
 /* Data management */
 .data-actions{display:flex;gap:10px;margin-top:20px;padding:16px;background:var(--cream);border-radius:var(--radius);border:2px dashed var(--pink)}
 
-/* Yarn Records */
-.yarn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
-.yarn-card{background:var(--card);border-radius:var(--radius);overflow:hidden;border:2px solid var(--border);box-shadow:var(--shadow);transition:.25s;position:relative}
-.yarn-card:hover{transform:translateY(-4px);box-shadow:0 8px 28px rgba(244,143,177,.18)}
-.yarn-img{width:100%;height:220px;object-fit:cover;background:var(--cream)}
-.yarn-body{padding:16px}
-.yarn-name{font-size:16px;font-weight:800;color:var(--rose);margin-bottom:6px;text-align:center}
-.yarn-meaning{font-size:13px;font-style:italic;color:var(--rose);line-height:1.6;margin:6px 0 10px;padding:8px 12px;background:linear-gradient(135deg,#fff0f5,#fff8e1);border-radius:10px;word-break:break-word}
-.yarn-desc{font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word}
-.yarn-drag-handle{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;cursor:grab;font-size:14px;color:var(--text-light);box-shadow:0 1px 4px rgba(0,0,0,.08);z-index:3;transition:.2s}
+/* Yarn Records - Gallery Exhibition */
+#page-yarn{padding:24px;background:linear-gradient(180deg,#FDF8F3 0%,#F9F1E8 100%);border-radius:var(--radius);min-height:calc(100vh - 120px)}
+.yarn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:24px;padding:8px}
+.yarn-card{background:#fff;border-radius:4px;padding:14px 14px 20px;box-shadow:0 4px 16px rgba(0,0,0,.08);border:none;transition:.25s;position:relative;display:flex;flex-direction:column}
+.yarn-card:hover{transform:translateY(-5px) rotate(0.5deg);box-shadow:0 12px 32px rgba(0,0,0,.12)}
+.yarn-card.dragging{opacity:.5;box-shadow:0 2px 8px rgba(0,0,0,.1);transform:scale(.98)}
+.yarn-card.drag-over{box-shadow:0 0 0 3px rgba(244,143,177,.35)}
+.yarn-img{width:100%;height:200px;object-fit:cover;background:var(--cream);border-radius:2px;margin-bottom:14px;border:1px solid #F0E6DC}
+.yarn-body{padding:0 4px;text-align:center;flex:1;display:flex;flex-direction:column}
+.yarn-name{font-size:17px;font-weight:800;color:var(--rose);margin-bottom:8px;text-align:center;font-family:Georgia,'Times New Roman',serif;letter-spacing:.3px}
+.yarn-meaning{font-size:12px;font-style:italic;color:var(--rose);line-height:1.6;margin:6px 0 10px;padding:8px 12px;background:linear-gradient(135deg,#fff0f5,#fff8e1);border-radius:8px;word-break:break-word;text-align:center}
+.yarn-desc{font-size:12px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word;text-align:left;margin-top:auto}
+.yarn-drag-handle{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;cursor:grab;font-size:13px;color:var(--text-light);border:1px solid #F0E6DC;z-index:3;transition:.2s}
+.yarn-drag-handle:hover{background:#fff;color:var(--rose);border-color:var(--pink)}
 .yarn-drag-handle:active{cursor:grabbing}
-.yarn-card.dragging{opacity:.5;border-color:var(--pink-deep);transform:scale(.98)}
-.yarn-card.drag-over{border-color:var(--rose);box-shadow:0 0 0 3px rgba(244,143,177,.25)}
-.yarn-meta{font-size:12px;color:var(--text-light);margin-top:10px;display:flex;justify-content:space-between;align-items:center}
-.yarn-del{cursor:pointer;color:var(--rose);font-size:20px;opacity:.5;transition:.2s}
+.yarn-meta{font-size:11px;color:var(--text-light);margin-top:12px;display:flex;justify-content:space-between;align-items:center;font-style:italic;border-top:1px dashed #F0E6DC;padding-top:8px}
+.yarn-del{cursor:pointer;color:var(--rose);font-size:18px;opacity:.5;transition:.2s}
 .yarn-del:hover{opacity:1}
-.yarn-index{position:absolute;top:12px;left:12px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);color:var(--rose);font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);border:2px solid var(--pink);z-index:2}
+.yarn-index{position:absolute;top:10px;left:10px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.95);color:var(--rose);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1px solid var(--pink);z-index:2}
 .yarn-edit{display:flex;gap:8px}
 .yarn-edit span{cursor:pointer;font-size:13px;color:var(--text-light);transition:.2s}
 .yarn-edit span:hover{color:var(--rose)}
-.yarn-edit-form{padding:16px;display:flex;flex-direction:column;gap:10px}
-.yarn-edit-form img{max-width:100%;height:160px;object-fit:cover;border-radius:8px;background:var(--cream)}
+.yarn-edit-form{padding:14px;display:flex;flex-direction:column;gap:10px;background:#fff}
+.yarn-edit-form img{max-width:100%;height:160px;object-fit:cover;border-radius:4px;background:var(--cream);border:1px solid #F0E6DC}
 .yarn-edit-form input,.yarn-edit-form textarea{width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:13px;outline:none}
 .yarn-edit-form textarea{min-height:70px;resize:vertical}
 .yarn-edit-actions{display:flex;gap:8px}
@@ -263,11 +265,14 @@ textarea{resize:vertical;min-height:70px}
   .data-actions{display:none!important}
   .ai-float{display:none}
   .checkin-btn{font-size:12px;padding:10px 8px}
-  .yarn-grid{grid-template-columns:repeat(2,1fr);gap:10px}
-  .yarn-img{height:140px}
-  .yarn-body{padding:10px}
+  .yarn-grid{grid-template-columns:repeat(2,1fr);gap:10px;padding:4px}
+  .yarn-card{padding:8px 8px 12px}
+  .yarn-img{height:130px;margin-bottom:10px}
   .yarn-name{font-size:14px}
-  .yarn-index{width:24px;height:24px;font-size:11px;top:8px;left:8px}
+  .yarn-meaning{font-size:11px;padding:6px 8px}
+  .yarn-desc{font-size:11px}
+  .yarn-index{width:22px;height:22px;font-size:10px;top:6px;left:6px}
+  .yarn-drag-handle{width:22px;height:22px;font-size:11px;top:6px;right:6px}
   .yarn-edit-form{padding:10px}
   .yarn-edit-form img{height:100px}
   .cal-month-label button{width:22px;height:22px;font-size:12px}
@@ -555,8 +560,8 @@ textarea{resize:vertical;min-height:70px}
   <div class="page-header">
     <div><h2>🧶 一段一段</h2><p>用毛线记录每一段生命的长度 ✨</p></div>
   </div>
-  <div class="card">
-    <div class="card-title">➕ 添加新作品</div>
+  <div class="card" style="background:linear-gradient(135deg,#fff,#FFF8F0);border:1px solid #F0E0D0">
+    <div class="card-title">➕ 挂上新的生命片段</div>
     <div style="display:flex;flex-direction:column;gap:12px">
       <div>
         <label style="display:block;font-size:13px;color:var(--text-light);margin-bottom:6px">作品照片</label>
@@ -571,7 +576,7 @@ textarea{resize:vertical;min-height:70px}
   </div>
   <div id="yarnList" class="yarn-grid"></div>
   <div id="yarnEmpty" class="card" style="display:none">
-    <p style="text-align:center;color:var(--text-light);padding:30px">还没有手作作品哦，添加第一件吧～ 🧶🐶</p>
+    <p style="text-align:center;color:var(--text-light);padding:30px">展厅里还没有展品哦，挂上第一段生命吧～ 🧶🐶</p>
   </div>
 </div>
 
