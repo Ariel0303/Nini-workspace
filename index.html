@@ -408,6 +408,19 @@ textarea{resize:vertical;min-height:70px}
     <div class="expense-list" id="expenseList"></div>
     <div class="chart-container"><canvas id="expenseChart"></canvas></div>
   </div>
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>📅 月度统计</span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <button class="cal-month-label" style="margin:0" onclick="changeExpenseMonth(-1)">‹</button>
+        <span id="expenseMonthLabel" style="font-size:14px;font-weight:700;color:var(--dark)">2026年7月</span>
+        <button class="cal-month-label" style="margin:0" onclick="changeExpenseMonth(1)">›</button>
+      </span>
+    </div>
+    <div class="expense-total" id="expenseMonthTotal">¥0.00</div>
+    <div class="chart-container"><canvas id="expenseMonthChart"></canvas></div>
+    <div id="expenseMonthList" style="margin-top:12px"></div>
+  </div>
 </div>
 
 <!-- ===== PAGE 4: 心情日记 ===== -->
@@ -579,7 +592,8 @@ const CATS = ['餐饮','交通','购物','娱乐','住房','医疗','教育','�
 const MOODS = [{e:'😄',w:'开心',v:5},{e:'😊',w:'愉快',v:4},{e:'😐',w:'平静',v:3},{e:'😔',w:'低落',v:2},{e:'😢',w:'难过',v:1},{e:'😤',w:'烦躁',v:1.5},{e:'😴',w:'困倦',v:2.5},{e:'🥰',w:'幸福',v:5},{e:'😎',w:'自信',v:4.5},{e:'🤔',w:'思考',v:3},{e:'🥹',w:'感动',v:4.5},{e:'😫',w:'疲惫',v:1.5},{e:'🥺',w:'委屈',v:2}];
 let selectedCat = '餐饮';
 let selectedMood = null;
-let expenseChart = null, moodChart = null, todoSummaryChart = null;
+let expenseChart = null, expenseMonthChart = null, moodChart = null, todoSummaryChart = null;
+let expenseMonthState=(()=>{const n=new Date();return {y:n.getFullYear(),m:n.getMonth()}})();
 
 function $(id){return document.getElementById(id)}
 function getData(key){try{return JSON.parse(localStorage.getItem(key)||'null')}catch(e){return null}}
@@ -940,12 +954,20 @@ function renderThinkCourses(){
 }
 
 // ========== MODULE 3: Expenses ==========
-function getExpenses(){
-  const all=getData('expenses')||{};
-  if(typeof all!=='object'||Array.isArray(all)){setData('expenses',{});return [];}
-  return all[TODAY]||[];
+function getAllExpenses(){
+  const all=getData('expenses');
+  if(!all||typeof all!=='object'||Array.isArray(all)){setData('expenses',{});return {};}
+  return all;
 }
-function saveExpenses(e){let all=getData('expenses');all[TODAY]=e;setData('expenses',all)}
+function getExpenses(date){
+  date=date||TODAY;
+  const all=getAllExpenses();
+  return all[date]||[];
+}
+function saveExpenses(e,date){
+  date=date||TODAY;
+  const all=getAllExpenses();all[date]=e;setData('expenses',all);
+}
 
 function renderCatTags(){
   $('catTags').innerHTML=CATS.map(c=>`<div class="cat-tag${c===selectedCat?' active':''}" onclick="selectCat('${c}')">${c}</div>`).join('');
@@ -972,6 +994,7 @@ function renderExpenses(){
       <div class="expense-item"><span><b>${escHtml(e.cat)}</b> ${e.desc?'· '+escHtml(e.desc):''} <small style="color:var(--text-light)">${e.time}</small></span><span class="amt">¥${e.amt.toFixed(2)} <span style="cursor:pointer;font-size:16px" onclick="delExpense(${e.id})">×</span></span></div>`).join('');
   }
   renderExpenseChart();
+  renderMonthlyExpenses();
 }
 
 function renderExpenseChart(){
@@ -988,6 +1011,59 @@ function renderExpenseChart(){
     data:{labels,datasets:[{data,backgroundColor:colors.slice(0,labels.length),borderWidth:2,borderColor:'#fff'}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:12,usePointStyle:true,font:{size:12}}}},cutout:'55%'}
   });
+}
+
+function changeExpenseMonth(delta){
+  expenseMonthState.m+=delta;
+  if(expenseMonthState.m>11){expenseMonthState.m=0;expenseMonthState.y++;}
+  if(expenseMonthState.m<0){expenseMonthState.m=11;expenseMonthState.y--;}
+  renderMonthlyExpenses();
+}
+
+function getMonthExpenses(y,m){
+  const all=getAllExpenses();
+  const prefix=`${y}-${String(m+1).padStart(2,'0')}`;
+  const days=[];
+  Object.keys(all).filter(k=>k.startsWith(prefix)).sort((a,b)=>b.localeCompare(a)).forEach(date=>{
+    const items=all[date]||[];
+    if(items.length)days.push({date,items,total:items.reduce((s,x)=>s+x.amt,0)});
+  });
+  return days;
+}
+
+function renderMonthlyExpenses(){
+  const y=expenseMonthState.y,m=expenseMonthState.m;
+  $('expenseMonthLabel').textContent=`${y}年${m+1}月`;
+  const days=getMonthExpenses(y,m);
+  const monthTotal=days.reduce((s,d)=>s+d.total,0);
+  $('expenseMonthTotal').textContent='¥'+monthTotal.toFixed(2);
+  // Chart by category
+  const byCat={};
+  days.forEach(d=>d.items.forEach(e=>{byCat[e.cat]=(byCat[e.cat]||0)+e.amt}));
+  const labels=Object.keys(byCat),data=Object.values(byCat);
+  const colors=['#E91E63','#F06292','#F8BBD9','#FFB7C5','#CE93D8','#BA68C8','#FF8A65','#FFD54F','#A1887F','#EC407A','#AB47BC','#90A4AE'];
+  if(expenseMonthChart)expenseMonthChart.destroy();
+  const ctx=$('expenseMonthChart').getContext('2d');
+  if(!labels.length){ctx.clearRect(0,0,$('expenseMonthChart').width,$('expenseMonthChart').height);}
+  else{
+    expenseMonthChart=new Chart(ctx,{
+      type:'doughnut',
+      data:{labels,datasets:[{data,backgroundColor:colors.slice(0,labels.length),borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:12,usePointStyle:true,font:{size:12}}}},cutout:'55%'}
+    });
+  }
+  // Daily list
+  const list=$('expenseMonthList');
+  if(!days.length){list.innerHTML='<p style="text-align:center;color:var(--text-light);padding:12px;font-size:13px">该月还没有记账记录哦~</p>';return;}
+  list.innerHTML=days.map(d=>`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--pink-soft);border-radius:10px;margin-bottom:4px">
+        <span style="font-weight:700;font-size:13px;color:var(--rose)">${d.date===TODAY?'今天':d.date}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--dark)">¥${d.total.toFixed(2)}</span>
+      </div>
+      ${d.items.map(e=>`<div class="expense-item" style="background:transparent;padding:6px 10px"><span style="font-size:12px"><b>${escHtml(e.cat)}</b> ${e.desc?'· '+escHtml(e.desc):''} <small style="color:var(--text-light)">${e.time}</small></span><span class="amt" style="font-size:12px">¥${e.amt.toFixed(2)}</span></div>`).join('')}
+    </div>
+  `).join('');
 }
 
 // ========== MODULE 4: Mood ==========
