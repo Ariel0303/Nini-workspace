@@ -560,7 +560,7 @@ textarea{resize:vertical;min-height:70px}
       </div>
       <input type="text" id="yarnName" placeholder="给作品取个名字...">
       <textarea id="yarnDesc" placeholder="记录用到的线材、钩针号、心得..." style="min-height:80px"></textarea>
-      <button class="btn btn-primary" id="yarnAddBtn" onclick="try{addYarn()}catch(e){showError('添加作品失败: '+e.message)}" style="align-self:flex-start">🧶 添加作品</button>
+      <button class="btn btn-primary" id="yarnAddBtn" onclick="try{addYarn()}catch(e){showError('添加一小段毛线生命失败: '+e.message)}" style="align-self:flex-start">🧶 添加一小段毛线生命</button>
     </div>
   </div>
   <div id="yarnList" class="yarn-grid"></div>
@@ -1637,9 +1637,9 @@ async function addYarn(){
   }catch(e){
     console.error('addYarn error',e);
     if(e.name==='QuotaExceededError'||e.code===22){showError('保存失败：图片太大或作品太多，请删除一些旧作品或换张小图');}
-    else{showError('添加作品失败: '+e.message);}
+    else{showError('添加一小段毛线生命失败: '+e.message);}
   }finally{
-    if(btn){btn.disabled=false;btn.textContent='🧶 添加作品';}
+    if(btn){btn.disabled=false;btn.textContent='🧶 添加一小段毛线生命';}
   }
 }
 
