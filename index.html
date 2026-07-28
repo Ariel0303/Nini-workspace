@@ -634,23 +634,52 @@ window.onerror=function(msg,src,line,col,err){
 // ===== Cloud Sync (手动) =====
 var _sha=null;
 function gt(){return (localStorage.getItem('gitee_token')||'').trim()}
-function giteeHeaders(tk){return {'Authorization':'token '+tk}}
+async function fetchCloudSha(tk){
+  try{
+    var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk,{method:'GET',mode:'cors',cache:'no-store'});
+    if(r.ok){var d=await r.json();_sha=d.sha;}
+  }catch(e){console.log('fetch sha failed',e);}
+}
+async function doPush(tk,body){
+  return await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+}
 async function pushCloud(){
   var tk=gt();if(!tk){alert('请先设置 Token');return;}
   try{
   // If no local sha, fetch from cloud first
-  if(!_sha){
-    try{
-      var r0=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk,{method:'GET',mode:'cors',cache:'no-store'});
-      if(r0.ok){var d0=await r0.json();_sha=d0.sha;}
-    }catch(e){console.log('fetch sha failed',e);}
-  }
+  if(!_sha) await fetchCloudSha(tk);
   var a={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k!=='gitee_token')try{a[k]=JSON.parse(localStorage.getItem(k))}catch(x){a[k]=localStorage.getItem(k)}}
   var json=JSON.stringify(a),c=btoa(unescape(encodeURIComponent(json))),body={content:c,message:'manual'};if(_sha)body.sha=_sha;
   console.log('PUSH body size:',json.length,'sha:',_sha);
-  var r=await fetch('https://gitee.com/api/v5/repos/ariel0303/workspace-for-nini/contents/data.json?access_token='+tk,{method:'PUT',headers:Object.assign({'Content-Type':'application/json;charset=UTF-8'},giteeHeaders(tk)),body:JSON.stringify(body)});
-  if(r.ok){var d=await r.json();_sha=d.content.sha;showMsg('推送成功')}else{var txt=await r.text();showMsg('推送失败 '+r.status+' '+txt.slice(0,120));console.error('PUSH FAIL',r.status,txt);}
-  }catch(e){showMsg('推送失败 '+e.message);console.error('PUSH ERROR',e)}
+  showMsg('正在推送云端...');
+  var r=await doPush(tk,body);
+  if(!r.ok){
+    var txt=await r.text();
+    // sha mismatch/expired: refresh sha and retry once
+    if((r.status===400||r.status===422||r.status===409) && txt.toLowerCase().indexOf('sha')!==-1){
+      showMsg('sha 已过期，正在重试...');
+      await fetchCloudSha(tk);
+      if(_sha) body.sha=_sha;
+      r=await doPush(tk,body);
+      if(r.ok){var d=await r.json();_sha=d.content.sha;showMsg('推送成功');return;}
+      txt=await r.text();
+    }
+    var msg='推送失败 '+r.status;
+    if(r.status===401) msg='Token 无效或已过期，请重新设置 Token';
+    else if(r.status===403) msg='Token 权限不足，请检查 Token 是否有仓库读写权限';
+    else if(r.status===404) msg='云端仓库路径不存在';
+    showMsg(msg+' '+txt.slice(0,120));console.error('PUSH FAIL',r.status,txt);return;
+  }
+  var d=await r.json();_sha=d.content.sha;showMsg('推送成功');
+  }catch(e){
+    console.error('PUSH ERROR',e);
+    var errMsg=e.message||'';
+    if(errMsg.toLowerCase().indexOf('failed to fetch')!==-1||errMsg.toLowerCase().indexOf('networkerror')!==-1||errMsg.indexOf('无法连接')!==-1){
+      showMsg('无法连接到 Gitee 服务器，请检查网络或换用 WiFi/数据流量再试');
+    }else{
+      showMsg('推送失败 '+errMsg);
+    }
+  }
 }
 async function pullCloud(){
   var tk=gt();if(!tk){alert('请先设置 Token');return;}
