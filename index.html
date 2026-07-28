@@ -209,6 +209,7 @@ textarea{resize:vertical;min-height:70px}
 .yarn-img{width:100%;height:220px;object-fit:cover;background:var(--cream)}
 .yarn-body{padding:16px}
 .yarn-name{font-size:16px;font-weight:800;color:var(--rose);margin-bottom:6px}
+.yarn-meaning{font-size:13px;font-style:italic;color:var(--rose);line-height:1.6;margin:6px 0 10px;padding:8px 12px;background:linear-gradient(135deg,#fff0f5,#fff8e1);border-radius:10px;border-left:3px solid var(--pink-deep);word-break:break-word}
 .yarn-desc{font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word}
 .yarn-meta{font-size:12px;color:var(--text-light);margin-top:10px;display:flex;justify-content:space-between;align-items:center}
 .yarn-del{cursor:pointer;color:var(--rose);font-size:20px;opacity:.5;transition:.2s}
@@ -559,6 +560,7 @@ textarea{resize:vertical;min-height:70px}
         <p style="font-size:12px;color:var(--text-light);margin-top:4px">图片会自动压缩，建议上传 2MB 以内照片</p>
       </div>
       <input type="text" id="yarnName" placeholder="给作品取个名字...">
+      <textarea id="yarnMeaning" placeholder="用一句话写下这个小作品对你的特殊意义..." style="min-height:56px"></textarea>
       <textarea id="yarnDesc" placeholder="记录用到的线材、钩针号、心得..." style="min-height:80px"></textarea>
       <button class="btn btn-primary" id="yarnAddBtn" onclick="try{addYarn()}catch(e){showError('添加一小段毛线生命失败: '+e.message)}" style="align-self:flex-start">🧶 添加一小段毛线生命</button>
     </div>
@@ -1619,7 +1621,7 @@ function compressImage(file,maxW,maxH,quality){
 async function addYarn(){
   const btn=$('yarnAddBtn');
   try{
-    const name=$('yarnName').value.trim(),desc=$('yarnDesc').value.trim();
+    const name=$('yarnName').value.trim(),meaning=$('yarnMeaning').value.trim(),desc=$('yarnDesc').value.trim();
     const fileInput=$('yarnImage'),file=fileInput.files[0];
     if(!name){alert('请填写作品名字哦～');return;}
     if(btn){btn.disabled=true;btn.textContent='🧶 处理中...';}
@@ -1629,9 +1631,9 @@ async function addYarn(){
       img=await compressImage(file,600,600,0.7);
     }
     const yarns=getYarns();
-    yarns.unshift({id:Date.now(),name,desc,image:img,date:TODAY});
+    yarns.unshift({id:Date.now(),name,meaning,desc,image:img,date:TODAY});
     saveYarns(yarns);
-    $('yarnName').value='';$('yarnDesc').value='';fileInput.value='';
+    $('yarnName').value='';$('yarnMeaning').value='';$('yarnDesc').value='';fileInput.value='';
     renderYarns();
     showMsg('作品添加成功！🧶');
   }catch(e){
@@ -1662,6 +1664,7 @@ function renderYarns(){
           <input type="file" id="yarnEditImg-${y.id}" accept="image/*">
           <p style="font-size:11px;color:var(--text-light);margin:0">不选新图则保留当前图片</p>
           <input type="text" id="yarnEditName-${y.id}" value="${escHtml(y.name)}" placeholder="作品名字">
+          <textarea id="yarnEditMeaning-${y.id}" placeholder="用一句话写下这个小作品对你的特殊意义..." style="min-height:56px">${escHtml(y.meaning||'')}</textarea>
           <textarea id="yarnEditDesc-${y.id}" placeholder="描述...">${escHtml(y.desc||'')}</textarea>
           <div class="yarn-edit-actions">
             <button class="btn-save" onclick="saveYarnEdit(${y.id})">💾 保存</button>
@@ -1676,6 +1679,7 @@ function renderYarns(){
       ${y.image?`<img src="${y.image}" class="yarn-img" alt="${escHtml(y.name)}">`:''}
       <div class="yarn-body">
         <div class="yarn-name">${escHtml(y.name)}</div>
+        ${y.meaning?`<div class="yarn-meaning">✨ ${escHtml(y.meaning)}</div>`:''}
         ${y.desc?`<div class="yarn-desc">${escHtml(y.desc)}</div>`:''}
         <div class="yarn-meta">
           <span>${y.date||''}</span>
@@ -1695,6 +1699,7 @@ function cancelYarnEdit(){editingYarnId=null;renderYarns();}
 async function saveYarnEdit(id){
   try{
     const name=$(`yarnEditName-${id}`).value.trim();
+    const meaning=$(`yarnEditMeaning-${id}`).value.trim();
     const desc=$(`yarnEditDesc-${id}`).value.trim();
     const fileInput=$(`yarnEditImg-${id}`),file=fileInput.files[0];
     if(!name){alert('请填写作品名字哦～');return;}
@@ -1706,7 +1711,7 @@ async function saveYarnEdit(id){
       if(file.size>10*1024*1024){alert('图片太大啦，请选择 10MB 以内的照片');return;}
       img=await compressImage(file,600,600,0.7);
     }
-    yarns[idx]={...yarns[idx],name,desc,image:img};
+    yarns[idx]={...yarns[idx],name,meaning,desc,image:img};
     saveYarns(yarns);
     editingYarnId=null;
     renderYarns();
