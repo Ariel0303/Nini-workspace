@@ -283,7 +283,7 @@ textarea{resize:vertical;min-height:70px}
   <div class="nav-item" data-page="mood" onclick="switchPage('mood')"><span class="nav-icon">💗</span><span>心情日记</span></div>
   <div class="nav-item" data-page="books" onclick="switchPage('books')"><span class="nav-icon">📚</span><span>读书收获</span></div>
   <div class="nav-item" data-page="english" onclick="switchPage('english')"><span class="nav-icon">✏️</span><span>英语学习</span></div>
-  <div class="nav-item" data-page="yarn" onclick="switchPage('yarn')"><span class="nav-icon">🧶</span><span>毛毛记录</span></div>
+  <div class="nav-item" data-page="yarn" onclick="switchPage('yarn')"><span class="nav-icon">🧶</span><span>一段一段</span></div>
   <div style="flex:1"></div>
   <div class="data-actions" style="flex-direction:column;gap:8px;padding:12px;background:rgba(255,255,255,.12);border-radius:12px;border:2px dashed rgba(255,255,255,.25)">
     <button class="btn btn-sm btn-primary" style="width:100%;justify-content:center;background:var(--sakura);color:var(--rose)" onclick="exportData()">📤 导出数据</button>
@@ -548,7 +548,7 @@ textarea{resize:vertical;min-height:70px}
 <!-- Yarn Records Page -->
 <div class="page" id="page-yarn">
   <div class="page-header">
-    <div><h2>🧶 毛毛记录</h2><p>记录每一件手作温度 ✨</p></div>
+    <div><h2>🧶 一段一段</h2><p>记录每一件手作温度 ✨</p></div>
   </div>
   <div class="card">
     <div class="card-title">➕ 添加新作品</div>
@@ -565,7 +565,7 @@ textarea{resize:vertical;min-height:70px}
   </div>
   <div id="yarnList" class="yarn-grid"></div>
   <div id="yarnEmpty" class="card" style="display:none">
-    <p style="text-align:center;color:var(--text-light);padding:30px">还没有毛毛作品哦，添加第一件吧～ 🧶🐶</p>
+    <p style="text-align:center;color:var(--text-light);padding:30px">还没有手作作品哦，添加第一件吧～ 🧶🐶</p>
   </div>
 </div>
 
@@ -1644,7 +1644,7 @@ async function addYarn(){
 }
 
 function deleteYarn(id){
-  if(!confirm('确定删除这个毛毛作品吗？'))return;
+  if(!confirm('确定删除这个手作作品吗？'))return;
   saveYarns(getYarns().filter(y=>y.id!==id));renderYarns();
 }
 
