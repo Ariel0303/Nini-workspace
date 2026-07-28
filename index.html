@@ -695,36 +695,57 @@ function delScene(id){
   const d=getSceneData().filter(x=>x.id!==id);saveSceneData(d);renderSceneList();
 }
 
-function renderSceneList(){
-  const all=getSceneData();
-  const todayScenes=all.filter(x=>x.date===TODAY);
-  if(!todayScenes.length){$('sceneList').innerHTML='<p style="text-align:center;color:var(--text-light);padding:10px;font-size:13px">今天还没有记录情景哦~</p>';return;}
-  let html='';
-  todayScenes.forEach(s=>{
-    const dateLabel=s.date===TODAY?'今天':s.date.slice(5);
-    html+=`
-    <div style="background:var(--cream);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
-      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="this.nextElementSibling.classList.toggle('show');this.querySelector('.fold-arrow').textContent=this.nextElementSibling.classList.contains('show')?'▾':'▸'">
-        <div>
-          <span style="font-weight:700;font-size:14px;color:var(--dark)">📍 ${escHtml(s.name)}</span>
-          <span style="font-size:11px;color:var(--text-light);margin-left:8px">${dateLabel}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span class="fold-arrow">▾</span>
-          <span class="todo-del" onclick="event.stopPropagation();delScene(${s.id})">×</span>
-        </div>
+function toggleSceneDate(date){
+  const box=$('scene-date-'+date),arrow=$('scene-arrow-'+date);
+  if(!box||!arrow)return;
+  const isOpen=box.classList.contains('show');
+  box.classList.toggle('show');
+  box.style.display=isOpen?'none':'block';
+  arrow.textContent=isOpen?'▸':'▾';
+}
+
+function renderSceneCard(s,expanded){
+  const dateLabel=s.date===TODAY?'今天':s.date.slice(5);
+  return `
+  <div style="background:var(--cream);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="this.nextElementSibling.classList.toggle('show');this.querySelector('.fold-arrow').textContent=this.nextElementSibling.classList.contains('show')?'▾':'▸'">
+      <div>
+        <span style="font-weight:700;font-size:14px;color:var(--dark)">📍 ${escHtml(s.name)}</span>
+        <span style="font-size:11px;color:var(--text-light);margin-left:8px">${dateLabel}</span>
       </div>
-      <div class="checkin-calendar show" style="margin-top:8px;border:none;padding:8px 0 0 0;background:transparent">`;
-    if(s.words.length){
-      html+=`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`;
-      s.words.forEach((w,i)=>html+=`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all">${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delSceneWord(${s.id},${i})">×</span></span>`);
-      html+=`</div>`;
-    }
-    html+=`
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="fold-arrow">${expanded?'▾':'▸'}</span>
+        <span class="todo-del" onclick="event.stopPropagation();delScene(${s.id})">×</span>
+      </div>
+    </div>
+    <div class="checkin-calendar${expanded?' show':''}" style="margin-top:8px;border:none;padding:8px 0 0 0;background:transparent${expanded?'':'display:none'}">`+
+    (s.words.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`+s.words.map((w,i)=>`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all">${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delSceneWord(${s.id},${i})">×</span></span>`).join('')+`</div>`:'')+
+    `<div style="display:flex;gap:6px">
         <input id="snote-${s.id}" placeholder="记录单词、短语或句子..." style="flex:1;padding:6px 10px;font-size:12px" onkeydown="if(event.key==='Enter')addSceneWord(${s.id})">
         <button class="btn btn-sm btn-primary" onclick="addSceneWord(${s.id})">+</button>
       </div>
+    </div>
+  </div>`;
+}
+
+function renderSceneList(){
+  const all=getSceneData();
+  if(!all.length){$('sceneList').innerHTML='<p style="text-align:center;color:var(--text-light);padding:10px;font-size:13px">还没有记录情景哦~</p>';return;}
+  const grouped={};
+  all.forEach(s=>{grouped[s.date]=grouped[s.date]||[];grouped[s.date].push(s);});
+  const dates=Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
+  let html='';
+  dates.forEach(date=>{
+    const isToday=date===TODAY;
+    const count=grouped[date].length;
+    html+=`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--pink-soft);border-radius:10px;cursor:pointer;margin-bottom:6px" onclick="toggleSceneDate('${date}')">
+        <span style="font-weight:700;font-size:13px;color:var(--rose)">${isToday?'今天':date} <span style="font-weight:400;color:var(--text-light)">(${count}个情景)</span></span>
+        <span id="scene-arrow-${date}" style="font-size:12px;color:var(--rose)">${isToday?'▾':'▸'}</span>
+      </div>
+      <div id="scene-date-${date}" class="checkin-calendar${isToday?' show':''}" style="border:none;padding:0;background:transparent${isToday?'':'display:none'}">
+        ${grouped[date].map(s=>renderSceneCard(s,isToday)).join('')}
       </div>
     </div>`;
   });
@@ -810,29 +831,51 @@ function delLifeScene(id){
   const d=getLifeSceneData().filter(x=>x.id!==id);saveLifeSceneData(d);renderLifeSceneList();
 }
 
-function renderLifeSceneList(){
-  const all=getLifeSceneData();
-  const todayScenes=all.filter(x=>x.date===TODAY);
-  if(!todayScenes.length){$('lifeSceneList').innerHTML='<p style="text-align:center;color:var(--text-light);padding:10px;font-size:13px">今天还没有记录场景哦~</p>';return;}
-  let html='';
-  todayScenes.forEach(s=>{
-    html+=`
-    <div style="background:var(--cream);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
-      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="this.nextElementSibling.classList.toggle('show');this.querySelector('.lf-arrow').textContent=this.nextElementSibling.classList.contains('show')?'▾':'▸'">
-        <div><span style="font-weight:700;font-size:14px;color:var(--dark)">📍 ${escHtml(s.name)}</span><span style="font-size:11px;color:var(--text-light);margin-left:8px">${s.date===TODAY?'今天':s.date.slice(5)}</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><span class="lf-arrow">▾</span><span class="todo-del" onclick="event.stopPropagation();delLifeScene(${s.id})">×</span></div>
-      </div>
-      <div class="checkin-calendar show" style="margin-top:8px;border:none;padding:8px 0 0 0;background:transparent">`;
-    if(s.words.length){
-      html+=`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`;
-      s.words.forEach((w,i)=>html+=`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all">${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delLifeSceneWord(${s.id},${i})">×</span></span>`);
-      html+=`</div>`;
-    }
-    html+=`
-      <div style="display:flex;gap:6px">
+function toggleLifeSceneDate(date){
+  const box=$('lifescene-date-'+date),arrow=$('lifescene-arrow-'+date);
+  if(!box||!arrow)return;
+  const isOpen=box.classList.contains('show');
+  box.classList.toggle('show');
+  box.style.display=isOpen?'none':'block';
+  arrow.textContent=isOpen?'▸':'▾';
+}
+
+function renderLifeSceneCard(s,expanded){
+  const dateLabel=s.date===TODAY?'今天':s.date.slice(5);
+  return `
+  <div style="background:var(--cream);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="this.nextElementSibling.classList.toggle('show');this.querySelector('.lf-arrow').textContent=this.nextElementSibling.classList.contains('show')?'▾':'▸'">
+      <div><span style="font-weight:700;font-size:14px;color:var(--dark)">📍 ${escHtml(s.name)}</span><span style="font-size:11px;color:var(--text-light);margin-left:8px">${dateLabel}</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><span class="lf-arrow">${expanded?'▾':'▸'}</span><span class="todo-del" onclick="event.stopPropagation();delLifeScene(${s.id})">×</span></div>
+    </div>
+    <div class="checkin-calendar${expanded?' show':''}" style="margin-top:8px;border:none;padding:8px 0 0 0;background:transparent${expanded?'':'display:none'}">`+
+    (s.words.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`+s.words.map((w,i)=>`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all">${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delLifeSceneWord(${s.id},${i})">×</span></span>`).join('')+`</div>`:'')+
+    `<div style="display:flex;gap:6px">
         <input id="lsnote-${s.id}" placeholder="记录单词、短语或句子..." style="flex:1;padding:6px 10px;font-size:12px" onkeydown="if(event.key==='Enter')addLifeSceneWord(${s.id})">
         <button class="btn btn-sm btn-primary" onclick="addLifeSceneWord(${s.id})">+</button>
       </div></div></div>`;
+}
+
+function renderLifeSceneList(){
+  const all=getLifeSceneData();
+  if(!all.length){$('lifeSceneList').innerHTML='<p style="text-align:center;color:var(--text-light);padding:10px;font-size:13px">还没有记录场景哦~</p>';return;}
+  const grouped={};
+  all.forEach(s=>{grouped[s.date]=grouped[s.date]||[];grouped[s.date].push(s);});
+  const dates=Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
+  let html='';
+  dates.forEach(date=>{
+    const isToday=date===TODAY;
+    const count=grouped[date].length;
+    html+=`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--pink-soft);border-radius:10px;cursor:pointer;margin-bottom:6px" onclick="toggleLifeSceneDate('${date}')">
+        <span style="font-weight:700;font-size:13px;color:var(--rose)">${isToday?'今天':date} <span style="font-weight:400;color:var(--text-light)">(${count}个场景)</span></span>
+        <span id="lifescene-arrow-${date}" style="font-size:12px;color:var(--rose)">${isToday?'▾':'▸'}</span>
+      </div>
+      <div id="lifescene-date-${date}" class="checkin-calendar${isToday?' show':''}" style="border:none;padding:0;background:transparent${isToday?'':'display:none'}">
+        ${grouped[date].map(s=>renderLifeSceneCard(s,isToday)).join('')}
+      </div>
+    </div>`;
   });
   $('lifeSceneList').innerHTML=html;
   renderWordbook();
