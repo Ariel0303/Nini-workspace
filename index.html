@@ -208,9 +208,13 @@ textarea{resize:vertical;min-height:70px}
 .yarn-card:hover{transform:translateY(-4px);box-shadow:0 8px 28px rgba(244,143,177,.18)}
 .yarn-img{width:100%;height:220px;object-fit:cover;background:var(--cream)}
 .yarn-body{padding:16px}
-.yarn-name{font-size:16px;font-weight:800;color:var(--rose);margin-bottom:6px}
+.yarn-name{font-size:16px;font-weight:800;color:var(--rose);margin-bottom:6px;text-align:center}
 .yarn-meaning{font-size:13px;font-style:italic;color:var(--rose);line-height:1.6;margin:6px 0 10px;padding:8px 12px;background:linear-gradient(135deg,#fff0f5,#fff8e1);border-radius:10px;word-break:break-word}
 .yarn-desc{font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.yarn-drag-handle{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;cursor:grab;font-size:14px;color:var(--text-light);box-shadow:0 1px 4px rgba(0,0,0,.08);z-index:3;transition:.2s}
+.yarn-drag-handle:active{cursor:grabbing}
+.yarn-card.dragging{opacity:.5;border-color:var(--pink-deep);transform:scale(.98)}
+.yarn-card.drag-over{border-color:var(--rose);box-shadow:0 0 0 3px rgba(244,143,177,.25)}
 .yarn-meta{font-size:12px;color:var(--text-light);margin-top:10px;display:flex;justify-content:space-between;align-items:center}
 .yarn-del{cursor:pointer;color:var(--rose);font-size:20px;opacity:.5;transition:.2s}
 .yarn-del:hover{opacity:1}
@@ -1674,8 +1678,9 @@ function renderYarns(){
       </div>`;
     }
     return `
-    <div class="yarn-card">
+    <div class="yarn-card" draggable="true" data-yarn-idx="${i}" ondragstart="yarnDragStart(event,${i})" ondragover="yarnDragOver(event,${i})" ondrop="yarnDrop(event,${i})" ondragenter="yarnDragEnter(event,${i})" ondragleave="yarnDragLeave(event,${i})" ondragend="yarnDragEnd(event)">
       <div class="yarn-index">${i+1}</div>
+      <div class="yarn-drag-handle" title="按住拖拽排序">≡</div>
       ${y.image?`<img src="${y.image}" class="yarn-img" alt="${escHtml(y.name)}">`:''}
       <div class="yarn-body">
         <div class="yarn-name">${escHtml(y.name)}</div>
@@ -1721,6 +1726,24 @@ async function saveYarnEdit(id){
     if(e.name==='QuotaExceededError'||e.code===22){showError('保存失败：图片太大，请换张小图');}
     else{showError('保存作品失败: '+e.message);}
   }
+}
+
+var yarnDragSrcIdx=null;
+function yarnDragStart(e,idx){yarnDragSrcIdx=idx;e.dataTransfer.effectAllowed='move';e.target.classList.add('dragging');e.dataTransfer.setData('text/plain',idx);}
+function yarnDragOver(e,idx){e.preventDefault();e.dataTransfer.dropEffect='move';}
+function yarnDragEnter(e,idx){e.preventDefault();if(idx!==yarnDragSrcIdx)e.currentTarget.classList.add('drag-over');}
+function yarnDragLeave(e,idx){e.currentTarget.classList.remove('drag-over');}
+function yarnDragEnd(e){document.querySelectorAll('.yarn-card').forEach(c=>{c.classList.remove('dragging');c.classList.remove('drag-over');});yarnDragSrcIdx=null;}
+function yarnDrop(e,idx){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if(yarnDragSrcIdx===null||yarnDragSrcIdx===idx)return;
+  const yarns=getYarns();
+  const [moved]=yarns.splice(yarnDragSrcIdx,1);
+  yarns.splice(idx,0,moved);
+  saveYarns(yarns);
+  renderYarns();
+  showMsg('排序已更新 🧶');
 }
 
 // ========== Helpers ==========
