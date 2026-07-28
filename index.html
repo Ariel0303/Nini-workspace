@@ -237,6 +237,14 @@ textarea{resize:vertical;min-height:70px}
 .yarn-del{cursor:pointer;color:var(--rose);font-size:18px;opacity:.5;transition:.2s}
 .yarn-del:hover{opacity:1}
 .yarn-index{position:absolute;top:10px;left:10px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.95);color:var(--rose);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1px solid var(--pink);z-index:2}
+.yarn-pin{position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:18px;height:18px;border-radius:50%;z-index:4;background:radial-gradient(circle at 30% 30%,#ff9a9e 0%,#e53935 40%,#b71c1c 100%);box-shadow:0 3px 6px rgba(0,0,0,.28),inset 0 -2px 4px rgba(0,0,0,.2),inset 0 2px 4px rgba(255,255,255,.45);border:1px solid rgba(0,0,0,.08)}
+.yarn-pin::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.95),rgba(0,0,0,.15));box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.yarn-pin.pin-1{background:radial-gradient(circle at 30% 30%,#ff9a9e 0%,#e53935 40%,#b71c1c 100%)}
+.yarn-pin.pin-2{background:radial-gradient(circle at 30% 30%,#ffcc80 0%,#fb8c00 40%,#e65100 100%)}
+.yarn-pin.pin-3{background:radial-gradient(circle at 30% 30%,#fff59d 0%,#fdd835 40%,#f9a825 100%)}
+.yarn-pin.pin-4{background:radial-gradient(circle at 30% 30%,#a5d6a7 0%,#43a047 40%,#1b5e20 100%)}
+.yarn-pin.pin-5{background:radial-gradient(circle at 30% 30%,#90caf9 0%,#1e88e5 40%,#0d47a1 100%)}
+.yarn-pin.pin-0{background:radial-gradient(circle at 30% 30%,#ce93d8 0%,#8e24aa 40%,#4a148c 100%)}
 .yarn-edit{display:flex;gap:8px}
 .yarn-edit span{cursor:pointer;font-size:13px;color:var(--text-light);transition:.2s}
 .yarn-edit span:hover{color:var(--rose)}
@@ -297,6 +305,8 @@ textarea{resize:vertical;min-height:70px}
   .yarn-meaning{font-size:11px;padding:6px 8px}
   .yarn-desc{font-size:11px}
   .yarn-index{width:22px;height:22px;font-size:10px;top:6px;left:6px}
+  .yarn-pin{width:14px;height:14px;top:-8px}
+  .yarn-pin::after{width:5px;height:5px}
   .yarn-drag-handle{width:22px;height:22px;font-size:11px;top:6px;right:6px}
   .yarn-edit-form{padding:10px}
   .yarn-edit-form img{height:100px}
@@ -1889,6 +1899,7 @@ function renderYarns(){
     if(editingYarnId===y.id){
       return `
       <div class="yarn-card" style="border-color:var(--rose);animation-delay:${delay}">
+        <div class="yarn-pin pin-${i%6}"></div>
         <div class="yarn-index">${i+1}</div>
         <div class="yarn-edit-form">
           ${y.image?`<img src="${y.image}" alt="当前图片">`:''}
@@ -1906,6 +1917,7 @@ function renderYarns(){
     }
     return `
     <div class="yarn-card" draggable="true" data-yarn-idx="${i}" style="animation-delay:${delay}" ondragstart="yarnDragStart(event,${i})" ondragover="yarnDragOver(event,${i})" ondrop="yarnDrop(event,${i})" ondragenter="yarnDragEnter(event,${i})" ondragleave="yarnDragLeave(event,${i})" ondragend="yarnDragEnd(event)">
+      <div class="yarn-pin pin-${i%6}"></div>
       <div class="yarn-index">${i+1}</div>
       <div class="yarn-drag-handle" title="按住拖拽排序">≡</div>
       ${y.image?`<img src="${y.image}" class="yarn-img" alt="${escHtml(y.name)}" onclick="openYarnLightbox('${y.image.replace(/'/g,"\\'")}')">`:''}
