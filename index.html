@@ -358,9 +358,9 @@ textarea{resize:vertical;min-height:70px}
     <div class="chart-container"><canvas id="todoSummaryChart"></canvas></div>
     <p style="text-align:center;margin-top:10px;font-size:13px;color:var(--text-light)" id="todoSummaryText"></p>
   </div>
-  <div class="card" id="historyCard" style="display:none">
-    <div class="card-title" style="cursor:pointer" onclick="toggleTodoHistory()">📜 历史已完成任务 <span id="historyToggle">▸</span></div>
-    <div id="todoHistory" style="display:none"></div>
+  <div class="card" id="historyCard">
+    <div class="card-title" style="cursor:pointer" onclick="toggleTodoHistory()">📜 历史已完成任务 <span id="historyToggle">▾</span></div>
+    <div id="todoHistory" style="display:block"></div>
   </div>
 </div>
 
@@ -1454,19 +1454,30 @@ function renderTodos(){
 }
 
 function toggleTodoHistory(){
-  const box=$('todoHistory'),arrow=$('historyToggle'),card=$('historyCard');
-  if(box.style.display==='none'){box.style.display='block';arrow.textContent='▾';card.style.display='block';}
+  const box=$('todoHistory'),arrow=$('historyToggle');
+  if(box.style.display==='none'){box.style.display='block';arrow.textContent='▾';}
   else{box.style.display='none';arrow.textContent='▸';}
 }
 
 function renderTodoHistory(){
-  const todos=getTodos(),box=$('todoHistory'),card=$('historyCard');
-  const history=todos.filter(t=>t.done&&t.date&&t.date!==TODAY).sort((a,b)=>b.date.localeCompare(a.date));
-  if(!history.length){card.style.display='none';return;}
-  card.style.display='block';
+  const todos=getTodos(),box=$('todoHistory');
+  const history=todos.filter(t=>t.done && (t.date||'').trim()!==TODAY);
+  if(!history.length){box.innerHTML='<div class="history-empty">暂无历史已完成任务～</div>';return;}
+  // Sort by date desc; tasks without date go to the end under "未记录日期"
+  history.sort((a,b)=>{
+    const da=(a.date||'').trim(), db=(b.date||'').trim();
+    if(!da && !db) return 0;
+    if(!da) return 1;
+    if(!db) return -1;
+    return db.localeCompare(da);
+  });
   const grouped={};
-  history.forEach(t=>{grouped[t.date]=grouped[t.date]||[];grouped[t.date].push(t);});
-  const dates=Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
+  history.forEach(t=>{const d=(t.date||'').trim()||'未记录日期'; grouped[d]=grouped[d]||[]; grouped[d].push(t);});
+  const dates=Object.keys(grouped).sort((a,b)=>{
+    if(a==='未记录日期') return 1;
+    if(b==='未记录日期') return -1;
+    return b.localeCompare(a);
+  });
   box.innerHTML=dates.map(date=>`
     <div class="history-date">${date}</div>
     ${grouped[date].map(t=>{
@@ -1474,7 +1485,6 @@ function renderTodoHistory(){
       return `<div class="history-item">
         <div class="todo-check checked">✓</div>
         <span class="todo-text">${escHtml(t.text)}</span>
-        <span class="cat-todo ${ccls}">${escHtml(t.cat)}</span>
       </div>`;
     }).join('')}
   `).join('');
