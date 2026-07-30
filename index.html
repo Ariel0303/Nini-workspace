@@ -630,6 +630,7 @@ textarea{resize:vertical;min-height:70px}
         <label style="display:block;font-size:13px;color:var(--text-light);margin-bottom:6px">作品照片</label>
         <input type="file" id="yarnImage" accept="image/*" style="padding:8px 0;font-size:13px">
         <p style="font-size:12px;color:var(--text-light);margin-top:4px">图片会自动压缩，建议上传 2MB 以内照片</p>
+        <p style="font-size:12px;color:var(--text-light);margin-top:2px" id="yarnStorage">已用空间：计算中…</p>
       </div>
       <input type="text" id="yarnName" placeholder="给这段生命赋予一个名字">
       <textarea id="yarnMeaning" placeholder="用一句话写下这段生命对你的特殊意义..." style="min-height:56px"></textarea>
@@ -1832,7 +1833,35 @@ function getYarns(){
   if(!d||!Array.isArray(d)){if(d)setData('yarns',[]);return [];}
   return d;
 }
-function saveYarns(y){setData('yarns',y)}
+function saveYarns(y){
+  try{setData('yarns',y);updateYarnStorage();}
+  catch(e){throw new Error('本地存储空间不足，请删除一些旧作品或换张小图');}
+}
+
+function getYarnStorageSize(){
+  try{
+    const yarns=getYarns();
+    const json=JSON.stringify(yarns);
+    return json.length;
+  }catch(e){return 0;}
+}
+
+function formatStorageSize(n){
+  if(n<1024)return n+' B';
+  if(n<1024*1024)return (n/1024).toFixed(1)+' KB';
+  return (n/1024/1024).toFixed(2)+' MB';
+}
+
+function updateYarnStorage(){
+  const el=$('yarnStorage');if(!el)return;
+  const used=getYarnStorageSize();
+  const limit=5*1024*1024;
+  const pct=Math.min(100,Math.round(used/limit*100));
+  let color='var(--text-light)';
+  if(pct>=90)color='var(--high)';
+  else if(pct>=70)color='var(--mid)';
+  el.innerHTML=`已用空间：<b style="color:${color}">${formatStorageSize(used)}</b> / 约 ${formatStorageSize(limit)} (${pct}%) · 还可存约 ${Math.max(0,Math.floor((limit-used)/8000))} 张照片`;
+}
 
 function compressImage(file,maxW,maxH,quality){
   return new Promise(function(resolve,reject){
@@ -1867,7 +1896,7 @@ async function addYarn(){
     let img='';
     if(file){
       if(file.size>10*1024*1024){alert('图片太大啦，请选择 10MB 以内的照片');return;}
-      img=await compressImage(file,600,600,0.7);
+      img=await compressImage(file,400,400,0.5);
     }
     const yarns=getYarns();
     yarns.unshift({id:Date.now(),name,meaning,desc,image:img,date:TODAY});
@@ -1877,7 +1906,7 @@ async function addYarn(){
     showMsg('作品添加成功！🧶');
   }catch(e){
     console.error('addYarn error',e);
-    if(e.name==='QuotaExceededError'||e.code===22){showError('保存失败：图片太大或作品太多，请删除一些旧作品或换张小图');}
+    if(e.name==='QuotaExceededError'||e.code===22||e.message.includes('存储空间不足')){showError('保存失败：浏览器空间已满，建议删除几张旧照片或换一张更小的图');}
     else{showError('添加一小段毛线生命失败: '+e.message);}
   }finally{
     if(btn){btn.disabled=false;btn.textContent='🧶 添加一小段毛线生命';}
@@ -1892,7 +1921,7 @@ function deleteYarn(id){
 function renderYarns(){
   const yarns=getYarns(),list=$('yarnList'),empty=$('yarnEmpty');
   const countEl=$('yarnCount');if(countEl)countEl.textContent='共 '+yarns.length+' 件作品';
-  if(!yarns.length){list.innerHTML='';empty.style.display='block';return;}
+  if(!yarns.length){list.innerHTML='';empty.style.display='block';updateYarnStorage();return;}
   empty.style.display='none';
   list.innerHTML=yarns.map((y,i)=>{
     const delay=(i*0.08).toFixed(2)+'s';
@@ -1935,6 +1964,7 @@ function renderYarns(){
       </div>
     </div>`;
   }).join('');
+  updateYarnStorage();
 }
 
 function startEditYarn(id){editingYarnId=id;renderYarns();}
@@ -1953,7 +1983,7 @@ async function saveYarnEdit(id){
     let img=yarns[idx].image;
     if(file){
       if(file.size>10*1024*1024){alert('图片太大啦，请选择 10MB 以内的照片');return;}
-      img=await compressImage(file,600,600,0.7);
+      img=await compressImage(file,400,400,0.5);
     }
     yarns[idx]={...yarns[idx],name,meaning,desc,image:img};
     saveYarns(yarns);
@@ -1962,7 +1992,7 @@ async function saveYarnEdit(id){
     showMsg('作品已更新！🧶');
   }catch(e){
     console.error('saveYarnEdit error',e);
-    if(e.name==='QuotaExceededError'||e.code===22){showError('保存失败：图片太大，请换张小图');}
+    if(e.name==='QuotaExceededError'||e.code===22||e.message.includes('存储空间不足')){showError('保存失败：浏览器空间已满，建议删除几张旧照片或换一张更小的图');}
     else{showError('保存作品失败: '+e.message);}
   }
 }
