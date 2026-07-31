@@ -384,7 +384,7 @@ textarea{resize:vertical;min-height:70px}
     <div class="chart-container"><canvas id="todoSummaryChart"></canvas></div>
     <p style="text-align:center;margin-top:10px;font-size:13px;color:var(--text-light)" id="todoSummaryText"></p>
   </div>
-  <div class="card" id="historyCard">
+  <div class="card" id="historyCard" data-manual-fold>
     <div class="card-title" style="cursor:pointer" onclick="toggleTodoHistory()">📜 历史已完成任务 <span id="historyToggle">▾</span></div>
     <div id="todoHistory" style="display:block"></div>
   </div>
@@ -2068,6 +2068,7 @@ document.addEventListener('DOMContentLoaded', function(){
   // Auto-collapse all cards
   document.querySelectorAll('.card').forEach(card=>{
     if(card.querySelector('.card-body'))return; // already wrapped
+    if(card.hasAttribute('data-manual-fold'))return; // skip cards with custom fold logic
     const title=card.querySelector(':scope > .card-title');
     if(!title||title.querySelector('.fs-arrow')||title.querySelector('#wbArrow'))return; // skip scene/wordbook custom folds
     const body=document.createElement('div');body.className='card-body';
