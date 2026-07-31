@@ -159,6 +159,13 @@ textarea{resize:vertical;min-height:70px}
 .swj-word-toggle:hover{background:var(--pink-soft)}
 .swj-word-body{display:none;padding:10px 0 0 0}
 .swj-word-body.show{display:block}
+.wtype-group{display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap}
+.wtype-btn{padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px;cursor:pointer;color:var(--text);transition:.2s}
+.wtype-btn.active{background:var(--rose);color:#fff;border-color:var(--rose);font-weight:600}
+.wtype-label{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;margin-right:4px;vertical-align:middle}
+.wtype-label.word{background:#E3F2FD;color:#1565C0}
+.wtype-label.phrase{background:#FFF3E0;color:#E65100}
+.wtype-label.sentence{background:#E8F5E9;color:#2E7D32}
 
 /* Expense */
 .expense-form{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
@@ -815,8 +822,9 @@ function addScene(){
 
 function addSceneWord(sid){
   const input=$('snote-'+sid);const text=input.value.trim();if(!text)return;
+  const type=getSelectedWordType('scene-'+sid);
   const d=getSceneData();const s=d.find(x=>x.id===sid);if(!s)return;
-  s.words.push({text,time:new Date().toLocaleDateString('zh-CN')});saveSceneData(d);input.value='';
+  s.words.push({text,type,time:new Date().toLocaleDateString('zh-CN')});saveSceneData(d);input.value='';
   renderSceneList();
 }
 
@@ -854,8 +862,9 @@ function renderSceneCard(s,expanded){
       </div>
     </div>
     <div class="checkin-calendar${expanded?' show':''}" style="margin-top:8px;border:none;padding:8px 0 0 0;background:transparent${expanded?'':'display:none'}">`+
-    (s.words.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`+s.words.map((w,i)=>`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all">${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delSceneWord(${s.id},${i})">×</span></span>`).join('')+`</div>`:'')+
-    `<div style="display:flex;gap:6px">
+    (s.words.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`+s.words.map((w,i)=>`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all"><span class="wtype-label ${w.type||'word'}">${getWordTypeShort(w.type||'word')}</span>${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delSceneWord(${s.id},${i})">×</span></span>`).join('')+`</div>`:'')+
+    `<div class="wtype-group" id="wtype-scene-${s.id}" data-selected-type="word">`+WORD_TYPES.map(t=>`<button type="button" class="wtype-btn${t.key==='word'?' active':''}" onclick="selectWordType(this,'${t.key}')">${t.label}</button>`).join('')+`</div>
+      <div style="display:flex;gap:6px">
         <input id="snote-${s.id}" placeholder="记录单词、短语或句子..." style="flex:1;padding:6px 10px;font-size:12px" onkeydown="if(event.key==='Enter')addSceneWord(${s.id})">
         <button class="btn btn-sm btn-primary" onclick="addSceneWord(${s.id})">+</button>
       </div>
@@ -889,6 +898,36 @@ function renderSceneList(){
 }
 
 // Wordbook
+const WORD_TYPES=[
+  {key:'word',label:'🔤 单词',short:'词'},
+  {key:'phrase',label:'📝 短语',short:'短'},
+  {key:'sentence',label:'💬 句子',short:'句'}
+];
+function inferWordType(text){
+  const t=(text||'').trim();
+  if(/[.?!。！？]/.test(t)||t.length>25)return 'sentence';
+  if(/\s/.test(t)&&t.length>12)return 'phrase';
+  return 'word';
+}
+function getWordTypeLabel(key){const t=WORD_TYPES.find(x=>x.key===key);return t?t.label:'🔤 单词';}
+function getWordTypeShort(key){const t=WORD_TYPES.find(x=>x.key===key);return t?t.short:'词';}
+function selectWordType(btn,type){
+  const group=btn.parentElement;
+  group.querySelectorAll('.wtype-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  group.setAttribute('data-selected-type',type);
+}
+function getSelectedWordType(groupId){
+  const group=document.getElementById('wtype-'+groupId);
+  return group?group.getAttribute('data-selected-type')||'word':'word';
+}
+function migrateWordTypes(dataList){
+  dataList.forEach(s=>{
+    if(!Array.isArray(s.words))s.words=[];
+    s.words.forEach(w=>{if(!w.type)w.type=inferWordType(w.text);});
+  });
+}
+
 function toggleWordbook(){
   const wb=$('wordbook'),arrow=$('wbArrow');
   const isOpen=wb.style.display==='block';
@@ -899,21 +938,25 @@ function toggleWordbook(){
 
 function renderWordbook(){
   const wb=$('wordbook');if(wb.style.display==='none')return;
-  const all=getSceneData().concat(getLifeSceneData()).concat(getSwjData()),allWords=[];
+  const sceneData=getSceneData(),lifeData=getLifeSceneData(),swjData=getSwjData();
+  migrateWordTypes(sceneData);saveSceneData(sceneData);
+  migrateWordTypes(lifeData);saveLifeSceneData(lifeData);
+  migrateWordTypes(swjData);saveSwjData(swjData);
+  const all=sceneData.concat(lifeData).concat(swjData),allWords=[];
   all.forEach(s=>{
     const source=s.title||s.name;
-    (s.words||[]).forEach(w=>allWords.push({text:w.text,scene:source,date:s.date}));
+    (s.words||[]).forEach(w=>allWords.push({text:w.text,scene:source,date:s.date,type:w.type||'word'}));
   });
   if(!allWords.length){wb.innerHTML='<p style="text-align:center;color:var(--text-light);padding:16px">还没有记录单词哦，去情景英语或语料复述里添加吧~</p>';return;}
-  const groups={};
-  allWords.forEach(w=>{
-    const l=(w.text.charAt(0)||'#').toUpperCase();if(!groups[l])groups[l]=[];groups[l].push(w);
-  });
-  const sortedKeys=Object.keys(groups).sort();
+  const typeGroups={};
+  WORD_TYPES.forEach(t=>typeGroups[t.key]=[]);
+  allWords.forEach(w=>{const t=w.type||'word';if(!typeGroups[t])typeGroups[t]=[];typeGroups[t].push(w);});
   let html=`<div style="font-size:13px;color:var(--text-light);margin-bottom:10px">共 <b>${allWords.length}</b> 条记录</div>`;
-  sortedKeys.forEach(l=>{
-    html+=`<div style="font-weight:700;color:var(--rose);margin:10px 0 4px 0;font-size:15px">${l}</div>`;
-    groups[l].forEach(w=>{
+  WORD_TYPES.forEach(t=>{
+    const list=typeGroups[t.key]||[];if(!list.length)return;
+    html+=`<div style="font-weight:700;color:var(--rose);margin:14px 0 6px 0;font-size:15px;display:flex;align-items:center;gap:6px">${t.label} <span style="font-size:12px;color:var(--text-light);font-weight:400">(${list.length})</span></div>`;
+    list.sort((a,b)=>a.text.localeCompare(b.text,'zh-CN'));
+    list.forEach(w=>{
       html+=`<div style="display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid var(--border);font-size:13px">
         <span>${escHtml(w.text)}</span>
         <span style="color:var(--text-light);font-size:11px;margin-left:8px;white-space:nowrap">${escHtml(w.scene)}</span>
@@ -954,8 +997,9 @@ function addLifeScene(){
 
 function addLifeSceneWord(sid){
   const input=$('lsnote-'+sid);const text=input.value.trim();if(!text)return;
+  const type=getSelectedWordType('lifescene-'+sid);
   const d=getLifeSceneData();const s=d.find(x=>x.id===sid);if(!s)return;
-  s.words.push({text,time:new Date().toLocaleDateString('zh-CN')});saveLifeSceneData(d);input.value='';
+  s.words.push({text,type,time:new Date().toLocaleDateString('zh-CN')});saveLifeSceneData(d);input.value='';
   renderLifeSceneList();
 }
 
@@ -987,8 +1031,9 @@ function renderLifeSceneCard(s,expanded){
       <div style="display:flex;align-items:center;gap:6px"><span class="lf-arrow">${expanded?'▾':'▸'}</span><span class="todo-del" onclick="event.stopPropagation();delLifeScene(${s.id})">×</span></div>
     </div>
     <div class="checkin-calendar${expanded?' show':''}" style="margin-top:8px;border:none;padding:8px 0 0 0;background:transparent${expanded?'':'display:none'}">`+
-    (s.words.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`+s.words.map((w,i)=>`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all">${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delLifeSceneWord(${s.id},${i})">×</span></span>`).join('')+`</div>`:'')+
-    `<div style="display:flex;gap:6px">
+    (s.words.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`+s.words.map((w,i)=>`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all"><span class="wtype-label ${w.type||'word'}">${getWordTypeShort(w.type||'word')}</span>${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delLifeSceneWord(${s.id},${i})">×</span></span>`).join('')+`</div>`:'')+
+    `<div class="wtype-group" id="wtype-lifescene-${s.id}" data-selected-type="word">`+WORD_TYPES.map(t=>`<button type="button" class="wtype-btn${t.key==='word'?' active':''}" onclick="selectWordType(this,'${t.key}')">${t.label}</button>`).join('')+`</div>
+      <div style="display:flex;gap:6px">
         <input id="lsnote-${s.id}" placeholder="记录单词、短语或句子..." style="flex:1;padding:6px 10px;font-size:12px" onkeydown="if(event.key==='Enter')addLifeSceneWord(${s.id})">
         <button class="btn btn-sm btn-primary" onclick="addLifeSceneWord(${s.id})">+</button>
       </div></div></div>`;
@@ -1095,9 +1140,10 @@ function delSwj(id){
 
 function addSwjWord(id){
   const input=$('swjword-'+id);const text=(input.value||'').trim();if(!text)return;
+  const type=getSelectedWordType('swj-'+id);
   const d=getSwjData();const s=d.find(x=>x.id===id);if(!s)return;
   if(!Array.isArray(s.words))s.words=[];
-  s.words.push({text,time:new Date().toLocaleDateString('zh-CN')});
+  s.words.push({text,type,time:new Date().toLocaleDateString('zh-CN')});
   saveSwjData(d);renderSwjList();
   // keep word section expanded
   setTimeout(()=>{
@@ -1141,7 +1187,8 @@ function renderSwjCard(s,isArchive){
       <span class="swj-word-arrow">▸</span>
     </div>
     <div class="swj-word-body">
-      ${(s.words||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`+(s.words||[]).map((w,i)=>`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all;border:1px solid var(--border)">${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delSwjWord(${s.id},${i})">×</span></span>`).join('')+`</div>`:''}
+      ${(s.words||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`+(s.words||[]).map((w,i)=>`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all;border:1px solid var(--border)"><span class="wtype-label ${w.type||'word'}">${getWordTypeShort(w.type||'word')}</span>${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delSwjWord(${s.id},${i})">×</span></span>`).join('')+`</div>`:''}
+      <div class="wtype-group" id="wtype-swj-${s.id}" data-selected-type="word">${WORD_TYPES.map(t=>`<button type="button" class="wtype-btn${t.key==='word'?' active':''}" onclick="selectWordType(this,'${t.key}')">${t.label}</button>`).join('')}</div>
       <div style="display:flex;gap:6px">
         <input id="swjword-${s.id}" placeholder="记录学到的单词、短语或句子..." style="flex:1;padding:6px 10px;font-size:12px" onkeydown="if(event.key==='Enter')addSwjWord(${s.id})">
         <button class="btn btn-sm btn-primary" onclick="addSwjWord(${s.id})">+</button>
