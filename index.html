@@ -535,10 +535,10 @@ textarea{resize:vertical;min-height:70px}
       <div class="checkin-calendar" id="cal-engread"></div>
     </div>
   </div>
-  <!-- 模块2：尚雯婕听背练 -->
+  <!-- 模块2：语料复述 -->
   <div class="card" id="ci-shangwj">
-    <div class="card-title">🎙️ 尚雯婕听背练</div>
-    <p style="margin-bottom:12px;color:var(--text-light);font-size:13px">选一段 20 分钟材料：听写 → 背诵 → 复述</p>
+    <div class="card-title">🎙️ 语料复述</div>
+    <p style="margin-bottom:12px;color:var(--text-light);font-size:13px">选一段语料：泛听理解 → 关键词记录 → 复述</p>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
       <div style="display:flex;gap:8px">
         <input type="text" id="swjTitle" placeholder="材料标题，如：乔布斯斯坦福演讲" style="flex:1;font-size:13px">
@@ -1029,14 +1029,23 @@ function renderLifeSceneCk(){
   if($('cal-lifescene').classList.contains('show'))renderCalendar('lifescene');
 }
 
-// ========== Shang Wenjie English Method ==========
-function getSwjData(){return getData('shangwj_data')||[]}
+// ========== 语料复述 ==========
+function getSwjData(){
+  const d=getData('shangwj_data')||[];
+  // 迁移旧版数据：dictation->extensive, recite->keywords
+  d.forEach(s=>{
+    if(!s.steps)s.steps={};
+    if('dictation' in s.steps && !('extensive' in s.steps))s.steps.extensive=s.steps.dictation;
+    if('recite' in s.steps && !('keywords' in s.steps))s.steps.keywords=s.steps.recite;
+  });
+  return d;
+}
 function saveSwjData(d){setData('shangwj_data',d)}
 function getSwjCheckins(){return getData('shangwj_checkins')||{}}
 function saveSwjCheckins(c){setData('shangwj_checkins',c)}
 const SWJ_STEPS=[
-  {key:'dictation',label:'📝 听写',doneLabel:'听写 ✓'},
-  {key:'recite',label:'🗣️ 背诵',doneLabel:'背诵 ✓'},
+  {key:'extensive',label:'🎧 泛听理解',doneLabel:'泛听理解 ✓'},
+  {key:'keywords',label:'📝 关键词记录',doneLabel:'关键词记录 ✓'},
   {key:'retell',label:'🎤 复述',doneLabel:'复述 ✓'}
 ];
 
@@ -1045,7 +1054,7 @@ function addShangWJ(){
   const tag=$('swjTag').value.trim();
   const source=$('swjSource').value.trim();
   const d=getSwjData();
-  d.push({id:Date.now(),date:TODAY,title,tag,source,steps:{dictation:false,recite:false,retell:false},archived:false,logs:[]});
+  d.push({id:Date.now(),date:TODAY,title,tag,source,steps:{extensive:false,keywords:false,retell:false},archived:false,logs:[]});
   saveSwjData(d);
   $('swjTitle').value='';$('swjTag').value='';$('swjSource').value='';
   renderSwjList();
@@ -1053,7 +1062,7 @@ function addShangWJ(){
 
 function toggleSwjStep(id,stepKey){
   const d=getSwjData();const s=d.find(x=>x.id===id);if(!s)return;
-  s.steps=Object.assign({dictation:false,recite:false,retell:false},s.steps);
+  s.steps=Object.assign({extensive:false,keywords:false,retell:false},s.steps);
   const nowDone=!s.steps[stepKey];
   s.steps[stepKey]=nowDone;
   if(!s.logs)s.logs=[];
