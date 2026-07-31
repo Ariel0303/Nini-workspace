@@ -155,6 +155,10 @@ textarea{resize:vertical;min-height:70px}
 .swj-meta{font-size:11px;color:var(--text-light);display:flex;justify-content:space-between;align-items:center}
 .swj-empty{text-align:center;color:var(--text-light);padding:16px;font-size:13px}
 .swj-archive-count{font-size:12px;color:var(--text-light);font-weight:400}
+.swj-word-toggle{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#fff;border-radius:10px;border:1px dashed var(--border);cursor:pointer;font-size:13px;font-weight:600;color:var(--dark);margin-top:8px}
+.swj-word-toggle:hover{background:var(--pink-soft)}
+.swj-word-body{display:none;padding:10px 0 0 0}
+.swj-word-body.show{display:block}
 
 /* Expense */
 .expense-form{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
@@ -895,9 +899,12 @@ function toggleWordbook(){
 
 function renderWordbook(){
   const wb=$('wordbook');if(wb.style.display==='none')return;
-  const all=getSceneData().concat(getLifeSceneData()),allWords=[];
-  all.forEach(s=>s.words.forEach(w=>allWords.push({text:w.text,scene:s.name,date:s.date})));
-  if(!allWords.length){wb.innerHTML='<p style="text-align:center;color:var(--text-light);padding:16px">还没有记录单词哦，去情景英语里添加吧~</p>';return;}
+  const all=getSceneData().concat(getLifeSceneData()).concat(getSwjData()),allWords=[];
+  all.forEach(s=>{
+    const source=s.title||s.name;
+    (s.words||[]).forEach(w=>allWords.push({text:w.text,scene:source,date:s.date}));
+  });
+  if(!allWords.length){wb.innerHTML='<p style="text-align:center;color:var(--text-light);padding:16px">还没有记录单词哦，去情景英语或语料复述里添加吧~</p>';return;}
   const groups={};
   allWords.forEach(w=>{
     const l=(w.text.charAt(0)||'#').toUpperCase();if(!groups[l])groups[l]=[];groups[l].push(w);
@@ -1037,6 +1044,7 @@ function getSwjData(){
     if(!s.steps)s.steps={};
     if('dictation' in s.steps && !('extensive' in s.steps))s.steps.extensive=s.steps.dictation;
     if('recite' in s.steps && !('keywords' in s.steps))s.steps.keywords=s.steps.recite;
+    if(!Array.isArray(s.words))s.words=[];
   });
   return d;
 }
@@ -1054,7 +1062,7 @@ function addShangWJ(){
   const tag=$('swjTag').value.trim();
   const source=$('swjSource').value.trim();
   const d=getSwjData();
-  d.push({id:Date.now(),date:TODAY,title,tag,source,steps:{extensive:false,keywords:false,retell:false},archived:false,logs:[]});
+  d.push({id:Date.now(),date:TODAY,title,tag,source,steps:{extensive:false,keywords:false,retell:false},archived:false,logs:[],words:[]});
   saveSwjData(d);
   $('swjTitle').value='';$('swjTag').value='';$('swjSource').value='';
   renderSwjList();
@@ -1085,6 +1093,25 @@ function delSwj(id){
   const d=getSwjData().filter(x=>x.id!==id);saveSwjData(d);renderSwjList();
 }
 
+function addSwjWord(id){
+  const input=$('swjword-'+id);const text=(input.value||'').trim();if(!text)return;
+  const d=getSwjData();const s=d.find(x=>x.id===id);if(!s)return;
+  if(!Array.isArray(s.words))s.words=[];
+  s.words.push({text,time:new Date().toLocaleDateString('zh-CN')});
+  saveSwjData(d);renderSwjList();
+  // keep word section expanded
+  setTimeout(()=>{
+    const bodies=document.querySelectorAll('.swj-word-body');
+    bodies.forEach(b=>{if(b.querySelector('#swjword-'+id))b.classList.add('show');});
+    const input2=$('swjword-'+id);if(input2){input2.focus();input2.value='';}
+  },0);
+}
+
+function delSwjWord(id,idx){
+  const d=getSwjData();const s=d.find(x=>x.id===id);if(!s||!s.words)return;
+  s.words.splice(idx,1);saveSwjData(d);renderSwjList();
+}
+
 function renderSwjCard(s,isArchive){
   const allDone=SWJ_STEPS.every(st=>!!(s.steps||{})[st.key]);
   const sourceHtml=s.source?(/^https?:\/\//.test(s.source)?`<a href="${escHtml(s.source)}" target="_blank">${escHtml(s.source)} ↗</a>`:escHtml(s.source)):'';
@@ -1108,6 +1135,17 @@ function renderSwjCard(s,isArchive){
         const done=!!(s.steps||{})[st.key];
         return `<button class="swj-step-btn${done?' done':''}" onclick="toggleSwjStep(${s.id},'${st.key}')">${done?st.doneLabel:st.label}</button>`;
       }).join('')}
+    </div>
+    <div class="swj-word-toggle" onclick="this.nextElementSibling.classList.toggle('show');this.querySelector('.swj-word-arrow').textContent=this.nextElementSibling.classList.contains('show')?'▾':'▸'">
+      <span>📚 本节单词/短语 (${(s.words||[]).length})</span>
+      <span class="swj-word-arrow">▸</span>
+    </div>
+    <div class="swj-word-body">
+      ${(s.words||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`+(s.words||[]).map((w,i)=>`<span style="background:#fff;border-radius:6px;padding:3px 8px;font-size:12px;display:inline-flex;align-items:center;gap:4px;max-width:100%;word-break:break-all;border:1px solid var(--border)">${escHtml(w.text)}<span style="cursor:pointer;color:var(--rose);font-size:11px;flex-shrink:0" onclick="delSwjWord(${s.id},${i})">×</span></span>`).join('')+`</div>`:''}
+      <div style="display:flex;gap:6px">
+        <input id="swjword-${s.id}" placeholder="记录学到的单词、短语或句子..." style="flex:1;padding:6px 10px;font-size:12px" onkeydown="if(event.key==='Enter')addSwjWord(${s.id})">
+        <button class="btn btn-sm btn-primary" onclick="addSwjWord(${s.id})">+</button>
+      </div>
     </div>
     ${allDone?'<div class="swj-meta"><span style="color:#2E7D32;font-weight:700">✅ 三阶段已完成</span></div>':''}
   </div>`;
