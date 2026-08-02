@@ -673,7 +673,10 @@ textarea{resize:vertical;min-height:70px}
 
 <script>
 // ========== Utils ==========
-const TODAY = new Date().toISOString().slice(0,10);
+function formatDateKey(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getToday(){return formatDateKey(new Date());}
 const CATS = ['餐饮','交通','购物','娱乐','住房','医疗','教育','通讯','服饰','美妆','社交','其他'];
 const MOODS = [{e:'😄',w:'开心',v:5},{e:'😊',w:'愉快',v:4},{e:'😐',w:'平静',v:3},{e:'😔',w:'低落',v:2},{e:'😢',w:'难过',v:1},{e:'😤',w:'烦躁',v:1.5},{e:'😴',w:'困倦',v:2.5},{e:'🥰',w:'幸福',v:5},{e:'😎',w:'自信',v:4.5},{e:'🤔',w:'思考',v:3},{e:'🥹',w:'感动',v:4.5},{e:'😫',w:'疲惫',v:1.5},{e:'🥺',w:'委屈',v:2}];
 let selectedCat = '餐饮';
@@ -791,13 +794,13 @@ function getEngCheckins(){return getData('engcheckins')||{}}
 function saveEngCheckins(c){setData('engcheckins',c)}
 
 function toggleEngRead(kind){
-  const c=getEngCheckins();c[TODAY]=c[TODAY]||{};
-  c[TODAY][kind]=!c[TODAY][kind];
+  const c=getEngCheckins();c[getToday()]=c[getToday()]||{};
+  c[getToday()][kind]=!c[getToday()][kind];
   saveEngCheckins(c);renderEngRead();
 }
 
 function renderEngRead(){
-  const c=getEngCheckins();const today=c[TODAY]||{};
+  const c=getEngCheckins();const today=c[getToday()]||{};
   const nw=!!today.new,rv=!!today.review;
   const btnNew=$('btn-engread-new'),btnReview=$('btn-engread-review');
   btnNew.className='checkin-btn '+(nw?'checked':'unchecked');
@@ -816,7 +819,7 @@ function saveSceneCheckins(c){setData('scene_checkins',c)}
 
 function addScene(){
   const name=$('sceneName').value.trim();if(!name)return;
-  const d=getSceneData();d.push({id:Date.now(),date:TODAY,name,words:[]});
+  const d=getSceneData();d.push({id:Date.now(),date:getToday(),name,words:[]});
   saveSceneData(d);$('sceneName').value='';renderSceneList();
 }
 
@@ -848,7 +851,7 @@ function toggleSceneDate(date){
 }
 
 function renderSceneCard(s,expanded){
-  const dateLabel=s.date===TODAY?'今天':s.date.slice(5);
+  const dateLabel=s.date===getToday()?'今天':s.date.slice(5);
   return `
   <div style="background:var(--cream);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
     <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="this.nextElementSibling.classList.toggle('show');this.querySelector('.fold-arrow').textContent=this.nextElementSibling.classList.contains('show')?'▾':'▸'">
@@ -880,7 +883,7 @@ function renderSceneList(){
   const dates=Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
   let html='';
   dates.forEach(date=>{
-    const isToday=date===TODAY;
+    const isToday=date===getToday();
     const count=grouped[date].length;
     html+=`
     <div style="margin-bottom:10px">
@@ -967,13 +970,13 @@ function renderWordbook(){
 }
 
 function toggleEngScene(kind){
-  const c=getSceneCheckins();c[TODAY]=c[TODAY]||{};
-  c[TODAY][kind]=!c[TODAY][kind];
+  const c=getSceneCheckins();c[getToday()]=c[getToday()]||{};
+  c[getToday()][kind]=!c[getToday()][kind];
   saveSceneCheckins(c);renderEngScene();
 }
 
 function renderEngScene(){
-  const c=getSceneCheckins();const today=c[TODAY]||{};
+  const c=getSceneCheckins();const today=c[getToday()]||{};
   const nw=!!today.new,rv=!!today.review;
   const btnNew=$('btn-engscene-new'),btnReview=$('btn-engscene-review');
   btnNew.className='checkin-btn '+(nw?'checked':'unchecked');
@@ -991,7 +994,7 @@ function saveLifeSceneCheckins(c){setData('life_scene_checkins',c)}
 
 function addLifeScene(){
   const name=$('lifeSceneName').value.trim();if(!name)return;
-  const d=getLifeSceneData();d.push({id:Date.now(),date:TODAY,name,words:[]});
+  const d=getLifeSceneData();d.push({id:Date.now(),date:getToday(),name,words:[]});
   saveLifeSceneData(d);$('lifeSceneName').value='';renderLifeSceneList();
 }
 
@@ -1023,7 +1026,7 @@ function toggleLifeSceneDate(date){
 }
 
 function renderLifeSceneCard(s,expanded){
-  const dateLabel=s.date===TODAY?'今天':s.date.slice(5);
+  const dateLabel=s.date===getToday()?'今天':s.date.slice(5);
   return `
   <div style="background:var(--cream);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border)">
     <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="this.nextElementSibling.classList.toggle('show');this.querySelector('.lf-arrow').textContent=this.nextElementSibling.classList.contains('show')?'▾':'▸'">
@@ -1047,7 +1050,7 @@ function renderLifeSceneList(){
   const dates=Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
   let html='';
   dates.forEach(date=>{
-    const isToday=date===TODAY;
+    const isToday=date===getToday();
     const count=grouped[date].length;
     html+=`
     <div style="margin-bottom:10px">
@@ -1065,13 +1068,13 @@ function renderLifeSceneList(){
 }
 
 function toggleLifeScene(kind){
-  const c=getLifeSceneCheckins();c[TODAY]=c[TODAY]||{};
-  c[TODAY][kind]=!c[TODAY][kind];
+  const c=getLifeSceneCheckins();c[getToday()]=c[getToday()]||{};
+  c[getToday()][kind]=!c[getToday()][kind];
   saveLifeSceneCheckins(c);renderLifeSceneCk();
 }
 
 function renderLifeSceneCk(){
-  const c=getLifeSceneCheckins();const today=c[TODAY]||{};
+  const c=getLifeSceneCheckins();const today=c[getToday()]||{};
   const nw=!!today.new,rv=!!today.review;
   const btnNew=$('btn-lifescene-new'),btnReview=$('btn-lifescene-review');
   btnNew.className='checkin-btn '+(nw?'checked':'unchecked');
@@ -1107,7 +1110,7 @@ function addShangWJ(){
   const tag=$('swjTag').value.trim();
   const source=$('swjSource').value.trim();
   const d=getSwjData();
-  d.push({id:Date.now(),date:TODAY,title,tag,source,steps:{extensive:false,keywords:false,retell:false},archived:false,logs:[],words:[]});
+  d.push({id:Date.now(),date:getToday(),title,tag,source,steps:{extensive:false,keywords:false,retell:false},archived:false,logs:[],words:[]});
   saveSwjData(d);
   $('swjTitle').value='';$('swjTag').value='';$('swjSource').value='';
   renderSwjList();
@@ -1119,10 +1122,10 @@ function toggleSwjStep(id,stepKey){
   const nowDone=!s.steps[stepKey];
   s.steps[stepKey]=nowDone;
   if(!s.logs)s.logs=[];
-  s.logs.push({date:TODAY,step:stepKey,done:nowDone});
-  s.lastDate=TODAY;
+  s.logs.push({date:getToday(),step:stepKey,done:nowDone});
+  s.lastDate=getToday();
   const allDone=SWJ_STEPS.every(st=>!!s.steps[st.key]);
-  if(allDone&&!s.archived){s.archived=true;s.archiveDate=TODAY;}
+  if(allDone&&!s.archived){s.archived=true;s.archiveDate=getToday();}
   if(!allDone&&s.archived){s.archived=false;delete s.archiveDate;}
   saveSwjData(d);renderSwjList();
 }
@@ -1162,7 +1165,7 @@ function renderSwjCard(s,isArchive){
   const allDone=SWJ_STEPS.every(st=>!!(s.steps||{})[st.key]);
   const sourceHtml=s.source?(/^https?:\/\//.test(s.source)?`<a href="${escHtml(s.source)}" target="_blank">${escHtml(s.source)} ↗</a>`:escHtml(s.source)):'';
   const tagHtml=s.tag?`<span class="swj-tag">${escHtml(s.tag)}</span>`:'';
-  const dateLabel=s.date===TODAY?'今天':s.date.slice(5);
+  const dateLabel=s.date===getToday()?'今天':s.date.slice(5);
   return `
   <div class="swj-item${allDone?' done':''}">
     <div class="swj-head">
@@ -1220,13 +1223,13 @@ function renderSwjList(){
 }
 
 function toggleShangWJ(kind){
-  const c=getSwjCheckins();c[TODAY]=c[TODAY]||{};
-  c[TODAY][kind]=!c[TODAY][kind];
+  const c=getSwjCheckins();c[getToday()]=c[getToday()]||{};
+  c[getToday()][kind]=!c[getToday()][kind];
   saveSwjCheckins(c);renderShangWJ();
 }
 
 function renderShangWJ(){
-  const c=getSwjCheckins();const today=c[TODAY]||{};
+  const c=getSwjCheckins();const today=c[getToday()]||{};
   const nw=!!today.new,rv=!!today.review;
   const btnNew=$('btn-shangwj-new'),btnReview=$('btn-shangwj-review');
   btnNew.className='checkin-btn '+(nw?'checked':'unchecked');
@@ -1285,12 +1288,12 @@ function getAllExpenses(){
   return all;
 }
 function getExpenses(date){
-  date=date||TODAY;
+  date=date||getToday();
   const all=getAllExpenses();
   return all[date]||[];
 }
 function saveExpenses(e,date){
-  date=date||TODAY;
+  date=date||getToday();
   const all=getAllExpenses();all[date]=e;setData('expenses',all);
 }
 
@@ -1383,7 +1386,7 @@ function renderMonthlyExpenses(){
   list.innerHTML=days.map(d=>`
     <div style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--pink-soft);border-radius:10px;margin-bottom:4px">
-        <span style="font-weight:700;font-size:13px;color:var(--rose)">${d.date===TODAY?'今天':d.date}</span>
+        <span style="font-weight:700;font-size:13px;color:var(--rose)">${d.date===getToday()?'今天':d.date}</span>
         <span style="font-size:13px;font-weight:700;color:var(--dark)">¥${d.total.toFixed(2)}</span>
       </div>
       ${d.items.map(e=>`<div class="expense-item" style="background:transparent;padding:6px 10px"><span style="font-size:12px"><b>${escHtml(e.cat)}</b> ${e.desc?'· '+escHtml(e.desc):''} <small style="color:var(--text-light)">${e.time}</small></span><span class="amt" style="font-size:12px">¥${e.amt.toFixed(2)}</span></div>`).join('')}
@@ -1407,7 +1410,7 @@ function pickMood(e,w,v){
 function saveMood(){
   if(!selectedMood){alert('请先选一个心情表情哦~ 💗');return;}
   const word=$('moodWord').value.trim()||selectedMood.w;
-  const moods=getMoods();moods[TODAY]={emoji:selectedMood.e,word,value:selectedMood.v,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
+  const moods=getMoods();moods[getToday()]={emoji:selectedMood.e,word,value:selectedMood.v,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
   saveMoods(moods);$('moodWord').value='';
   renderMoodHistory();renderMoodChart();
   alert('心情已记录！妮妮最棒了 ✨');
@@ -1419,7 +1422,7 @@ function renderMoodHistory(){
   if(!days.length){el.innerHTML='<p style="text-align:center;color:var(--text-light);padding:16px">还没有记录哦，妮妮开始记录吧~ 🌸</p>';return;}
   el.innerHTML=days.map(d=>{const m=moods[d];return `<div class="mood-history-item"><span style="font-size:24px">${m.emoji}</span><span><b>${d}</b> · ${escHtml(m.word)} <small style="color:var(--text-light)">${m.time||''}</small></span></div>`}).join('');
   // Show today's mood if exists
-  if(moods[TODAY]){$('moodBigEmoji').textContent=moods[TODAY].emoji;selectedMood={e:moods[TODAY].emoji,w:moods[TODAY].word,v:moods[TODAY].value};renderMoodOptions();}
+  if(moods[getToday()]){$('moodBigEmoji').textContent=moods[getToday()].emoji;selectedMood={e:moods[getToday()].emoji,w:moods[getToday()].word,v:moods[getToday()].value};renderMoodOptions();}
 }
 
 function renderMoodChart(){
@@ -1427,7 +1430,7 @@ function renderMoodChart(){
   // Last 7 days
   const labels=[],data=[];
   for(let i=6;i>=0;i--){
-    const d=new Date();d.setDate(d.getDate()-i);const key=d.toISOString().slice(0,10);
+    const d=new Date();d.setDate(d.getDate()-i);const key=formatDateKey(d);
     labels.push(key.slice(5));
     data.push(moods[key]?moods[key].value:null);
   }
@@ -1588,7 +1591,7 @@ function processAI(){
     else if(/烦|烦躁|生气|愤怒|火大/.test(input)){mv=1.5;mw='烦躁';me='😤'}
     else if(/难过|伤心|哭|想哭/.test(input)){mv=1;mw='难过';me='😢'}
     if(mv){
-      const moods=getMoods();moods[TODAY]={emoji:me,word:mw,value:mv,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
+      const moods=getMoods();moods[getToday()]={emoji:me,word:mw,value:mv,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
       saveMoods(moods);results.push(`✅ 已记录心情：${me} ${mw}`);
     }
   }
@@ -1630,7 +1633,7 @@ function exportData(){
   };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`樱田妮妮工作台_${TODAY}.json`;a.click();URL.revokeObjectURL(a.href);
+  a.download=`樱田妮妮工作台_${getToday()}.json`;a.click();URL.revokeObjectURL(a.href);
 }
 
 function importData(event){
@@ -1669,7 +1672,7 @@ function saveTodos(t){setData('todos',t)}
 function addTodo(){
   const text=$('todoText').value.trim();if(!text)return;
   const pri=$('todoPriority').value,cat=$('todoCategory').value;
-  const todos=getTodos();todos.push({id:Date.now(),text,pri,cat,done:false,date:TODAY});
+  const todos=getTodos();todos.push({id:Date.now(),text,pri,cat,done:false,date:getToday()});
   saveTodos(todos);$('todoText').value='';renderTodos();renderTodoSummary();
 }
 
@@ -1682,13 +1685,13 @@ function delTodo(id){if(!confirm('删除这个任务？'))return;saveTodos(getTo
 
 function renderTodos(){
   const todos=getTodos(),list=$('todoList'),delayList=$('delayList'),delayCard=$('delayCard');
-  const todayTodos=todos.filter(t=>t.date===TODAY);
+  const todayTodos=todos.filter(t=>t.date===getToday());
   const doneToday=todayTodos.filter(t=>t.done).length;
   const totalToday=todayTodos.length;
   $('planTotal').textContent=totalToday;$('planDone').textContent=doneToday;
   $('planRate').textContent=totalToday?Math.round(doneToday/totalToday*100)+'%':'0%';
   // Delay: tasks from before today that are not done
-  const now=new Date(),delayed=todos.filter(t=>!t.done&&t.date&&t.date<TODAY);
+  const now=new Date(),delayed=todos.filter(t=>!t.done&&t.date&&t.date<getToday());
   $('planDelay').textContent=delayed.length;
   if(delayed.length){delayCard.style.display='block';delayList.innerHTML=delayed.map(t=>`
     <div class="todo-item" style="border-left-color:var(--high)">
@@ -1725,7 +1728,7 @@ function toggleTodoHistory(){
 
 function renderTodoHistory(){
   const todos=getTodos(),box=$('todoHistory'),card=$('historyCard');
-  const history=todos.filter(t=>t.done && (t.date||'').trim()!==TODAY);
+  const history=todos.filter(t=>t.done && (t.date||'').trim()!==getToday());
   card.style.display='block';
   if(!history.length){box.innerHTML='<div class="history-empty">暂无历史已完成任务～</div>';return;}
   // Sort by date desc; tasks without date go to the end under "未记录日期"
@@ -1783,26 +1786,26 @@ function saveCheckins(c){setData('checkins',c)}
 
 function setCheckinStatus(type,status){
   const c=getCheckins();if(!c[type])c[type]={};
-  c[type][TODAY]={status:status,time:$('time-'+type).value.trim()||new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
+  c[type][getToday()]={status:status,time:$('time-'+type).value.trim()||new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
   saveCheckins(c);renderCheckins();
 }
 
 function toggleWaterCup(idx){
   const c=getCheckins();
   // Migrate old flat array format to per-date format
-  if(Array.isArray(c.water)){c.water={[TODAY]:c.water};}
+  if(Array.isArray(c.water)){c.water={[getToday()]:c.water};}
   if(!c.water||typeof c.water!=='object')c.water={};
-  if(!c.water[TODAY])c.water[TODAY]=[];
-  const arr=c.water[TODAY];
-  if(arr.includes(idx)){c.water[TODAY]=arr.filter(x=>x!==idx);}
-  else if(arr.length<8)c.water[TODAY].push(idx);
+  if(!c.water[getToday()])c.water[getToday()]=[];
+  const arr=c.water[getToday()];
+  if(arr.includes(idx)){c.water[getToday()]=arr.filter(x=>x!==idx);}
+  else if(arr.length<8)c.water[getToday()].push(idx);
   saveCheckins(c);renderCheckins();
 }
 
 function renderCheckins(){
   const c=getCheckins();
   // Sleep
-  const sl=c.sleep&&c.sleep[TODAY];
+  const sl=c.sleep&&c.sleep[getToday()];
   const btnSG=$('btn-sleep-good'),btnSB=$('btn-sleep-bad');
   if(sl){
     btnSG.className='checkin-btn '+(sl.status==='good'?'checked':'unchecked');
@@ -1817,7 +1820,7 @@ function renderCheckins(){
     $('ci-sleep').className='checkin-card';
   }
   // Wake
-  const wk=c.wake&&c.wake[TODAY];
+  const wk=c.wake&&c.wake[getToday()];
   const btnWG=$('btn-wake-good'),btnWB=$('btn-wake-bad');
   if(wk){
     btnWG.className='checkin-btn '+(wk.status==='good'?'checked':'unchecked');
@@ -1832,8 +1835,8 @@ function renderCheckins(){
     $('ci-wake').className='checkin-card';
   }
   // Water
-  if(Array.isArray(c.water)){c.water={[TODAY]:c.water};saveCheckins(c);}
-  const wArr=(c.water&&c.water[TODAY])||[];
+  if(Array.isArray(c.water)){c.water={[getToday()]:c.water};saveCheckins(c);}
+  const wArr=(c.water&&c.water[getToday()])||[];
   let wHtml='';
   for(let i=0;i<8;i++){
     const filled=wArr.includes(i);
@@ -1897,7 +1900,7 @@ function renderCalendar(type){
   }
   for(let d=1;d<=daysInMonth;d++){
     const key=`${monthPrefix}-${String(d).padStart(2,'0')}`;
-    const isToday=key===TODAY;
+    const isToday=key===getToday();
     let cls='',label='';
     if(info.isEng){
       const dayData=data[key]||{};
@@ -1998,7 +2001,7 @@ async function addYarn(){
       img=await compressImage(file,400,400,0.5);
     }
     const yarns=getYarns();
-    yarns.unshift({id:Date.now(),name,meaning,desc,image:img,date:TODAY});
+    yarns.unshift({id:Date.now(),name,meaning,desc,image:img,date:getToday()});
     saveYarns(yarns);
     $('yarnName').value='';$('yarnMeaning').value='';$('yarnDesc').value='';fileInput.value='';
     renderYarns();
