@@ -489,6 +489,11 @@ textarea{resize:vertical;min-height:70px}
     <div class="mood-today">
       <div class="mood-emoji-big" id="moodBigEmoji">🤔</div>
       <div class="mood-input-area">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <label style="font-size:13px;color:var(--text-light);white-space:nowrap">记录日期</label>
+          <input type="date" id="moodDate" style="flex:1;padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:8px" onchange="onMoodDateChange()">
+          <span id="moodEditTag" style="display:none;font-size:12px;color:var(--rose);background:var(--pink-soft);padding:3px 8px;border-radius:6px">编辑中</span>
+        </div>
         <div class="mood-options" id="moodOptions"></div>
         <div class="mood-word-input" style="margin-top:12px">
           <input type="text" id="moodWord" placeholder="用一个词形容今天..." style="flex:1">
@@ -1409,18 +1414,63 @@ function pickMood(e,w,v){
 
 function saveMood(){
   if(!selectedMood){alert('请先选一个心情表情哦~ 💗');return;}
+  const date=$('moodDate').value||getToday();
   const word=$('moodWord').value.trim()||selectedMood.w;
-  const moods=getMoods();moods[getToday()]={emoji:selectedMood.e,word,value:selectedMood.v,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
+  const moods=getMoods();
+  moods[date]={emoji:selectedMood.e,word,value:selectedMood.v,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})};
   saveMoods(moods);$('moodWord').value='';
+  resetMoodEditor();
   renderMoodHistory();renderMoodChart();
-  alert('心情已记录！妮妮最棒了 ✨');
+  const msg=date===getToday()?'心情已记录！妮妮最棒了 ✨':`已补录 ${date} 的心情 ✨`;
+  alert(msg);
+}
+
+function editMood(date){
+  const moods=getMoods();const m=moods[date];if(!m)return;
+  $('moodDate').value=date;
+  $('moodEditTag').style.display='inline-block';
+  selectedMood={e:m.emoji,w:m.word,v:m.value};
+  $('moodBigEmoji').textContent=m.emoji;
+  $('moodWord').value=m.word===getMoodWordByEmoji(m.emoji)?'':m.word;
+  renderMoodOptions();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function getMoodWordByEmoji(e){
+  const m=MOODS.find(x=>x.e===e);return m?m.w:'';
+}
+
+function resetMoodEditor(){
+  $('moodDate').value=getToday();
+  $('moodEditTag').style.display='none';
+  selectedMood=null;
+  $('moodBigEmoji').textContent='🤔';
+  $('moodWord').value='';
+  renderMoodOptions();
+}
+
+function onMoodDateChange(){
+  const date=$('moodDate').value||getToday();
+  const moods=getMoods();const m=moods[date];
+  if(m){
+    $('moodEditTag').style.display='inline-block';
+    selectedMood={e:m.emoji,w:m.word,v:m.value};
+    $('moodBigEmoji').textContent=m.emoji;
+    $('moodWord').value=m.word===getMoodWordByEmoji(m.emoji)?'':m.word;
+  }else{
+    $('moodEditTag').style.display='none';
+    selectedMood=null;
+    $('moodBigEmoji').textContent='🤔';
+    $('moodWord').value='';
+  }
+  renderMoodOptions();
 }
 
 function renderMoodHistory(){
   const moods=getMoods();const el=$('moodHistory');
-  const days=Object.keys(moods).sort().reverse().slice(0,7);
+  const days=Object.keys(moods).sort().reverse().slice(0,30);
   if(!days.length){el.innerHTML='<p style="text-align:center;color:var(--text-light);padding:16px">还没有记录哦，妮妮开始记录吧~ 🌸</p>';return;}
-  el.innerHTML=days.map(d=>{const m=moods[d];return `<div class="mood-history-item"><span style="font-size:24px">${m.emoji}</span><span><b>${d}</b> · ${escHtml(m.word)} <small style="color:var(--text-light)">${m.time||''}</small></span></div>`}).join('');
+  el.innerHTML=days.map(d=>{const m=moods[d];return `<div class="mood-history-item" style="justify-content:space-between"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">${m.emoji}</span><span><b>${d}</b> · ${escHtml(m.word)} <small style="color:var(--text-light)">${m.time||''}</small></span></div><span class="todo-del" style="font-size:12px;padding:4px 8px" onclick="editMood('${d}')">编辑</span></div>`}).join('');
   // Show today's mood if exists
   if(moods[getToday()]){$('moodBigEmoji').textContent=moods[getToday()].emoji;selectedMood={e:moods[getToday()].emoji,w:moods[getToday()].word,v:moods[getToday()].value};renderMoodOptions();}
 }
@@ -2153,6 +2203,7 @@ document.addEventListener('DOMContentLoaded', function(){
   if($('todayDateCheckin'))$('todayDateCheckin').textContent=dstr;
   if($('todayDateExpense'))$('todayDateExpense').textContent=dstr;
   if($('todayDateMood'))$('todayDateMood').textContent=dstr;
+  if($('moodDate'))$('moodDate').value=getToday();
   // Auto-collapse all cards
   document.querySelectorAll('.card').forEach(card=>{
     if(card.querySelector('.card-body'))return; // already wrapped
