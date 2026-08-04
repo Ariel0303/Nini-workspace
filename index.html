@@ -420,19 +420,6 @@ textarea{resize:vertical;min-height:70px}
       <div class="checkin-cal-toggle" onclick="toggleCalendar('sleep')">📅 本月打卡记录 ▸</div>
       <div class="checkin-calendar" id="cal-sleep"></div>
     </div>
-    <!-- 早起 -->
-    <div class="checkin-card" id="ci-wake">
-      <div class="checkin-header"><h3>🌅 早起打卡</h3><span class="checkin-emoji">☀️</span></div>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <input id="time-wake" style="flex:1;padding:8px 12px;font-size:13px;text-align:center" placeholder="起床时间，如 07:00">
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button class="checkin-btn unchecked" id="btn-wake-good" onclick="setCheckinStatus('wake','good')" style="flex:1">成功</button>
-        <button class="checkin-btn unchecked" id="btn-wake-bad" onclick="setCheckinStatus('wake','bad')" style="flex:1">失败</button>
-      </div>
-      <div class="checkin-cal-toggle" onclick="toggleCalendar('wake')">📅 本月打卡记录 ▸</div>
-      <div class="checkin-calendar" id="cal-wake"></div>
-    </div>
     <!-- 喝水 -->
     <div class="checkin-card" id="ci-water">
       <div class="checkin-header"><h3>💧 8杯水打卡</h3><span class="checkin-emoji">💦</span></div>
@@ -1869,21 +1856,6 @@ function renderCheckins(){
     btnSB.className='checkin-btn unchecked';btnSB.textContent='失败';
     $('ci-sleep').className='checkin-card';
   }
-  // Wake
-  const wk=c.wake&&c.wake[getToday()];
-  const btnWG=$('btn-wake-good'),btnWB=$('btn-wake-bad');
-  if(wk){
-    btnWG.className='checkin-btn '+(wk.status==='good'?'checked':'unchecked');
-    btnWB.className='checkin-btn '+(wk.status==='bad'?'checked':'unchecked');
-    btnWG.textContent=wk.status==='good'?'成功 ✓':'成功';
-    btnWB.textContent=wk.status==='bad'?'失败 ✓':'失败';
-    $('time-wake').value=wk.time||'';
-    $('ci-wake').className='checkin-card done';
-  }else{
-    btnWG.className='checkin-btn unchecked';btnWG.textContent='成功';
-    btnWB.className='checkin-btn unchecked';btnWB.textContent='失败';
-    $('ci-wake').className='checkin-card';
-  }
   // Water
   if(Array.isArray(c.water)){c.water={[getToday()]:c.water};saveCheckins(c);}
   const wArr=(c.water&&c.water[getToday()])||[];
@@ -1897,14 +1869,12 @@ function renderCheckins(){
   if(wArr.length>=8)$('ci-water').className='checkin-card done';else $('ci-water').className='checkin-card';
   // Calendars
   if($('cal-sleep').classList.contains('show'))renderCalendar('sleep');
-  if($('cal-wake').classList.contains('show'))renderCalendar('wake');
   if($('cal-water').classList.contains('show'))renderCalendar('water');
 }
 
 // ========== Calendar ==========
 const CAL_TYPES={
   sleep:{rootKey:'checkins',subKey:'sleep',getColor:d=>d.status==='good'?'checked':d.status==='bad'?'missed':'',getLabel:d=>d.time||''},
-  wake:{rootKey:'checkins',subKey:'wake',getColor:d=>d.status==='good'?'checked':d.status==='bad'?'missed':'',getLabel:d=>d.time||''},
   water:{rootKey:'checkins',subKey:'water',getColor:(arr)=>arr&&arr.length>0?'checked':'',getLabel:''},
   engread:{key:'engcheckins',isEng:true,subKey:'engread'},
   engscene:{key:'scene_checkins',isEng:true,subKey:'engscene'},
